@@ -124,22 +124,30 @@ class EpgRepository : FileCacheRepository("epg.json") {
 private class EpgXmlRepository : FileCacheRepository("epg.xml") {
     private val log = Logger.create(javaClass.simpleName)
 
+    // 取消掉EPG_XML_URL远程的获取
     /**
      * 获取远程xml
      */
     private suspend fun fetchXml(url: String): String = withContext(Dispatchers.IO) {
+        // 1. 如果 URL 是空的，直接返回一个模拟的空结果或抛出特定异常
+        if (url.isBlank()) {
+            log.d("EPG URL 为空，跳过远程获取")
+            return@withContext "" // 返回空字符串，不触发后续逻辑
+        }
+
         log.d("获取远程节目单xml: $url")
 
+        // 下面是原有的逻辑，只有在 url 不为空时才会运行
         val client = OkHttpClient()
-        val request = Request.Builder().url(url).build()
-
         try {
+            val request = Request.Builder().url(url).build()
             with(client.newCall(request).execute()) {
                 if (!isSuccessful) {
                     throw Exception("获取远程节目单xml失败: $code")
                 }
 
-                val fetcher = EpgFetcher.instances.first { it.isSupport(url) }
+                val fetcher = EpgFetcher.instances.firstOrNull { it.isSupport(url) }
+                    ?: throw Exception("找不到支持的解析器")
 
                 return@with fetcher.fetch(this)
             }
