@@ -12,12 +12,12 @@ object Constants {
     /**
      * 应用 代码仓库
      */
-    const val APP_REPO = "https://github.com/yaoxieyoulei/mytv-android"
+    const val APP_REPO = "https://github.com/hahahahahaxiaoming/mytv-android"
 
     /**
      * IPTV源地址
      */
-    const val IPTV_SOURCE_URL = "http://1.2.3.4/live.m3u"
+    const val IPTV_SOURCE_URL = "file:///android_asset/live.m3u"
 
     /**
      * IPTV源缓存时间（毫秒）

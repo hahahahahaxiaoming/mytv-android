@@ -21,20 +21,31 @@ class IptvRepository : FileCacheRepository("iptv.txt") {
     /**
      * 获取远程直播源数据
      */
-    private suspend fun fetchSource(sourceUrl: String) = withContext(Dispatchers.IO) {
+    private suspend fun fetchSource(sourceUrl: String): String = withContext(Dispatchers.IO) {
         log.d("获取远程直播源: $sourceUrl")
 
+        // 1. 处理本地资产文件 (使用 Java ClassLoader，不需要 Context)
+        if (sourceUrl.startsWith("file:///android_asset/")) {
+            val fileName = sourceUrl.substringAfter("android_asset/")
+            return@withContext try {
+                // 直接从类加载器读取 assets 下的文件
+                this.javaClass.classLoader?.getResourceAsStream("assets/$fileName")?.bufferedReader()?.use {
+                    it.readText()
+                } ?: throw Exception("找不到资源文件: $fileName")
+            } catch (ex: Exception) {
+                log.e("读取本地文件失败", ex)
+                throw Exception("读取本地文件失败: ${ex.message}")
+            }
+        }
+
+        // 2. 原有的网络逻辑 (保持原样)
         val client = OkHttpClient()
         val request = Request.Builder().url(sourceUrl).build()
-
         try {
-            with(client.newCall(request).execute()) {
-                if (!isSuccessful) {
-                    throw Exception("获取远程直播源失败: $code")
-                }
-
-                return@with body!!.string()
-            }
+            val response = client.newCall(request).execute()
+            val content = response.body?.string() ?: ""
+            response.close()
+            content
         } catch (ex: Exception) {
             log.e("获取远程直播源失败", ex)
             throw Exception("获取远程直播源失败，请检查网络连接", ex)
