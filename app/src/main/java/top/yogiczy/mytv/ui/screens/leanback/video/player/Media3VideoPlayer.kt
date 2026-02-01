@@ -46,24 +46,52 @@ class LeanbackMedia3VideoPlayer(
 
     @OptIn(UnstableApi::class)
     private fun prepare(uri: Uri, contentType: Int? = null) {
-        val dataSourceFactory =
-            DefaultDataSource.Factory(context, DefaultHttpDataSource.Factory().apply {
-                setUserAgent(SP.videoPlayerUserAgent)
-                setConnectTimeoutMs(SP.videoPlayerLoadTimeout.toInt())
-                setReadTimeoutMs(SP.videoPlayerLoadTimeout.toInt())
-                setKeepPostFor302Redirects(true)
-                setAllowCrossProtocolRedirects(true)
-            })
+        // === 1. 强制深度重置动作 (修复编译错误版) ===
+        // 停止播放，释放解码器占用的缓冲
+        videoPlayer.stop()
+        // 清空媒体队列，这在 Media3 中是断开当前 MediaSource 引用最安全的方法
+        videoPlayer.clearMediaItems()
+        // =====================================
+
+        // 2. 获取超时设置
+        val timeout = SP.videoPlayerLoadTimeout.toInt().coerceAtLeast(5000)
+
+        // 3. 构造 HTTP 数据源工厂
+        val httpDataSourceFactory = DefaultHttpDataSource.Factory().apply {
+            setUserAgent(SP.videoPlayerUserAgent)
+            setConnectTimeoutMs(timeout)
+            setReadTimeoutMs(timeout)
+            setAllowCrossProtocolRedirects(true)
+            setKeepPostFor302Redirects(true)
+        }
+
+        // 4. 构造通用数据源工厂
+        val dataSourceFactory = DefaultDataSource.Factory(context, httpDataSourceFactory)
 
         val mediaItem = MediaItem.fromUri(uri)
 
-        val mediaSource = when (val type = contentType ?: Util.inferContentType(uri)) {
+        // 5. 智能推断内容类型
+        val inferredType = Util.inferContentType(uri)
+        var type = contentType ?: inferredType
+
+        // 针对 63 频道等 m3u8 链接的强化判断
+        if (type == C.CONTENT_TYPE_OTHER && uri.toString().contains("m3u8")) {
+            type = C.CONTENT_TYPE_HLS
+        }
+
+        // 6. 根据类型创建 MediaSource
+        val mediaSource = when (type) {
             C.CONTENT_TYPE_HLS -> {
-                HlsMediaSource.Factory(dataSourceFactory).createMediaSource(mediaItem)
+                HlsMediaSource.Factory(dataSourceFactory)
+                    .setAllowChunklessPreparation(true)
+                    .createMediaSource(mediaItem)
             }
 
             C.CONTENT_TYPE_RTSP -> {
-                RtspMediaSource.Factory().createMediaSource(mediaItem)
+                RtspMediaSource.Factory()
+                    .setForceUseRtpTcp(true)
+                    .setTimeoutMs(timeout.toLong())
+                    .createMediaSource(mediaItem)
             }
 
             C.CONTENT_TYPE_OTHER -> {
@@ -73,19 +101,24 @@ class LeanbackMedia3VideoPlayer(
             else -> {
                 triggerError(
                     PlaybackException.UNSUPPORTED_TYPE.copy(
-                        errorCodeName = "${PlaybackException.UNSUPPORTED_TYPE.message}_$type"
+                        errorCodeName = "UNSUPPORTED_TYPE_$type"
                     )
                 )
                 null
             }
         }
 
+        // 7. 执行播放准备
         if (mediaSource != null) {
-            contentTypeAttempts[contentType ?: Util.inferContentType(uri)] = true
+            contentTypeAttempts[type] = true
+            // 此时 mediaSource 已经确定不为 null，可以安全设置
             videoPlayer.setMediaSource(mediaSource)
             videoPlayer.prepare()
+            // 确保重置后能立刻启动
+            videoPlayer.playWhenReady = true
             triggerPrepared()
         }
+
         updatePositionJob?.cancel()
         updatePositionJob = null
     }
