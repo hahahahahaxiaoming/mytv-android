@@ -12,18 +12,22 @@ object Constants {
     /**
      * 应用 标题
      */
-    const val APP_TITLE = "我的电视"
+    const val APP_TITLE = "TV"
 
     /**
      * 应用 代码仓库
      */
-    const val APP_REPO = "https://github.com/yaoxieyoulei/mytv-android"
+    const val APP_REPO = "https://github.com/hahahahahaxiaoming/mytv-android"
 
     /**
      * IPTV直播源
      */
     val IPTV_SOURCE_LIST = IptvSourceList(
         listOf(
+            IptvSource(
+                name = "默认直播源 giteesnail（IPV4/IPV6）",
+                url = "https://gitee.com/giteesnail/iptv/raw/master/iptv.m3u",
+            ),
             IptvSource(
                 name = "默认直播源 fanmingming（IPV6）",
                 url = "https://live.fanmingming.com/tv/m3u/ipv6.m3u",
@@ -65,8 +69,8 @@ object Constants {
      * Git最新版本信息
      */
     val GIT_RELEASE_LATEST_URL = mapOf(
-        "stable" to "https://ghp.ci/https://raw.githubusercontent.com/yaoxieyoulei/mytv-android-update/main/tv-stable.json",
-        "beta" to "https://ghp.ci/https://raw.githubusercontent.com/yaoxieyoulei/mytv-android-update/main/tv-beta.json",
+        "stable" to "https://api.github.com/repos/hahahahahaxiaoming/mytv-android/releases/latest",
+        "beta" to "https://api.github.com/repos/hahahahahaxiaoming/mytv-android/releases/latest",
     )
 
     /**

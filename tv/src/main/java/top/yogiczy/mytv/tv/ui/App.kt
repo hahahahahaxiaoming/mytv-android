@@ -41,7 +41,6 @@ import top.yogiczy.mytv.tv.ui.material.Snackbar
 import top.yogiczy.mytv.tv.ui.material.SnackbarType
 import top.yogiczy.mytv.tv.ui.material.SnackbarUI
 import top.yogiczy.mytv.tv.ui.material.Visible
-import top.yogiczy.mytv.tv.ui.screens.agreement.AgreementScreen
 import top.yogiczy.mytv.tv.ui.screens.main.MainScreen
 import top.yogiczy.mytv.tv.ui.screens.settings.LocalSettings
 import top.yogiczy.mytv.tv.ui.screens.settings.LocalSettingsCurrent
@@ -74,25 +73,17 @@ fun App(
         ),
     ) {
         PopupHandleableApplication {
-            if (settingsViewModel.appAgreementAgreed) {
-                MainScreen(
-                    modifier = modifier,
-                    onBackPressed = {
-                        if (doubleBackPressedExitState.allowExit) {
-                            onBackPressed()
-                        } else {
-                            doubleBackPressedExitState.backPress()
-                            Snackbar.show("再按一次退出")
-                        }
-                    },
-                )
-            } else {
-                AgreementScreen(
-                    onAgree = { settingsViewModel.appAgreementAgreed = true },
-                    onDisagree = { onBackPressed() },
-                    onDisableUiFocusOptimize = { settingsViewModel.uiFocusOptimize = false },
-                )
-            }
+            MainScreen(
+                modifier = modifier,
+                onBackPressed = {
+                    if (doubleBackPressedExitState.allowExit) {
+                        onBackPressed()
+                    } else {
+                        doubleBackPressedExitState.backPress()
+                        Snackbar.show("再按一次退出")
+                    }
+                },
+            )
         }
 
         SnackbarUI()
