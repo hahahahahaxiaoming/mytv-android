@@ -64,11 +64,13 @@ class Media3VideoPlayer(
     private var updatePositionJob: Job? = null
 
     private fun getMediaSource(uri: Uri, contentType: Int? = null): MediaSource? {
-        val mediaItem = MediaItem.fromUri(uri)
-
         if (uri.toString().startsWith("rtp://")) {
-            return RtspMediaSource.Factory().createMediaSource(mediaItem)
+            val udpUri = rtpToUdpMulticastUri(uri)
+            return ProgressiveMediaSource.Factory(dataSourceFactory)
+                .createMediaSource(MediaItem.fromUri(udpUri))
         }
+
+        val mediaItem = MediaItem.fromUri(uri)
 
         return when (val type = contentType ?: Util.inferContentType(uri)) {
             C.CONTENT_TYPE_HLS -> {
@@ -92,6 +94,14 @@ class Media3VideoPlayer(
                 null
             }
         }
+    }
+
+    private fun rtpToUdpMulticastUri(uri: Uri): Uri {
+        val host = uri.host ?: return uri
+        val port = if (uri.port != -1) ":${uri.port}" else ""
+        val path = uri.path.orEmpty()
+
+        return Uri.parse("udp://@$host$port$path")
     }
 
     private fun prepare(uri: Uri, contentType: Int? = null) {
