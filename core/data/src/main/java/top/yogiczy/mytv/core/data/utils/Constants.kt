@@ -25,16 +25,16 @@ object Constants {
     val IPTV_SOURCE_LIST = IptvSourceList(
         listOf(
             IptvSource(
-                name = "默认直播源 giteesnail（IPV4/IPV6）",
+                name = "默认直播源 全国（IPV4/IPV6）",
+                url = "https://tv.ando.eu.org/list/HunanTV.m3u",
+            ),
+            IptvSource(
+                name = "默认直播源 广东联通（IPV4/IPV6）",
+                url = "https://gitee.com/giteesnail/iptv/raw/master/Guangdong_Unicom_iptv.m3u",
+            ),
+            IptvSource(
+                name = "默认直播源 河南联通（IPV4/IPV6）",
                 url = "https://gitee.com/giteesnail/iptv/raw/master/iptv.m3u",
-            ),
-            IptvSource(
-                name = "默认直播源 fanmingming（IPV6）",
-                url = "https://live.fanmingming.com/tv/m3u/ipv6.m3u",
-            ),
-            IptvSource(
-                name = "默认直播源 yuanzl77（IPV4/IPV6）",
-                url = "https://ghp.ci/https://raw.githubusercontent.com/yuanzl77/IPTV/main/live.m3u",
             ),
         )
     )
