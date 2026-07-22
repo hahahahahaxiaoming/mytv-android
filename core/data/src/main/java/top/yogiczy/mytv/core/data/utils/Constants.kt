@@ -9,6 +9,10 @@ import top.yogiczy.mytv.core.data.entities.iptvsource.IptvSourceList
  * 常量
  */
 object Constants {
+    /** 远程IPTV直播源配置 */
+    const val IPTV_SOURCE_SETTING_URL =
+        "https://gitee.com/giteesnail/iptv/raw/master/iptv.setting"
+
     /**
      * 应用 标题
      */
@@ -24,14 +28,6 @@ object Constants {
      */
     val IPTV_SOURCE_LIST = IptvSourceList(
         listOf(
-            IptvSource(
-                name = "默认直播源 全国（IPV4/IPV6）",
-                url = "https://tv.ando.eu.org/list/HunanTV.m3u",
-            ),
-            IptvSource(
-                name = "默认直播源 广东联通（IPV4/IPV6）",
-                url = "https://gitee.com/giteesnail/iptv/raw/master/Guangdong_Unicom_iptv.m3u",
-            ),
             IptvSource(
                 name = "默认直播源 河南联通（IPV4/IPV6）",
                 url = "https://gitee.com/giteesnail/iptv/raw/master/iptv.m3u",

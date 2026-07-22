@@ -146,6 +146,7 @@ fun SettingsCategoryIptv(
                 onDismissRequest = { isIptvSourceScreenVisible = false },
             ) {
                 IptvSourceScreen(
+                    presetIptvSourceListProvider = { settingsViewModel.iptvPresetSourceList },
                     iptvSourceListProvider = { settingsViewModel.iptvSourceList },
                     currentIptvSourceProvider = { settingsViewModel.iptvSourceCurrent },
                     onIptvSourceSelected = {

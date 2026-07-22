@@ -23,7 +23,6 @@ import androidx.tv.material3.ListItem
 import androidx.tv.material3.Text
 import top.yogiczy.mytv.core.data.entities.iptvsource.IptvSource
 import top.yogiczy.mytv.core.data.entities.iptvsource.IptvSourceList
-import top.yogiczy.mytv.core.data.utils.Constants
 import top.yogiczy.mytv.tv.ui.material.Drawer
 import top.yogiczy.mytv.tv.ui.material.DrawerPosition
 import top.yogiczy.mytv.tv.ui.material.LocalPopupManager
@@ -40,13 +39,14 @@ import kotlin.math.max
 @Composable
 fun IptvSourceScreen(
     modifier: Modifier = Modifier,
+    presetIptvSourceListProvider: () -> IptvSourceList = { IptvSourceList() },
     iptvSourceListProvider: () -> IptvSourceList = { IptvSourceList() },
     currentIptvSourceProvider: () -> IptvSource = { IptvSource() },
     onIptvSourceSelected: (IptvSource) -> Unit = {},
     onIptvSourceDeleted: (IptvSource) -> Unit = {},
     onClose: () -> Unit = {},
 ) {
-    val iptvSourceList = iptvSourceListProvider().let { Constants.IPTV_SOURCE_LIST + it }
+    val iptvSourceList = presetIptvSourceListProvider() + iptvSourceListProvider()
     val currentIptvSource = currentIptvSourceProvider()
     val currentIptvSourceIdx = iptvSourceList.indexOf(currentIptvSource)
 

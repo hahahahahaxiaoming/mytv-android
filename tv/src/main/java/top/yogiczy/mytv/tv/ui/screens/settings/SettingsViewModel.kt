@@ -7,15 +7,32 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 import top.yogiczy.mytv.core.data.entities.epg.EpgProgrammeReserveList
 import top.yogiczy.mytv.core.data.entities.epgsource.EpgSource
 import top.yogiczy.mytv.core.data.entities.epgsource.EpgSourceList
 import top.yogiczy.mytv.core.data.entities.iptvsource.IptvSource
 import top.yogiczy.mytv.core.data.entities.iptvsource.IptvSourceList
+import top.yogiczy.mytv.core.data.repositories.iptv.IptvSourceSettingRepository
+import top.yogiczy.mytv.core.data.utils.Constants
 import top.yogiczy.mytv.tv.ui.screens.videoplayer.VideoPlayerDisplayMode
 import top.yogiczy.mytv.tv.ui.utils.Configs
 
 class SettingsViewModel : ViewModel() {
+    private var _iptvPresetSourceList by mutableStateOf(Constants.IPTV_SOURCE_LIST)
+    val iptvPresetSourceList: IptvSourceList
+        get() = _iptvPresetSourceList
+
+    init {
+        viewModelScope.launch {
+            runCatching { IptvSourceSettingRepository().fetch() }
+                .onSuccess { remoteList ->
+                    _iptvPresetSourceList = IptvSourceList(remoteList + Constants.IPTV_SOURCE_LIST)
+                }
+        }
+    }
+
     private var _appBootLaunch by mutableStateOf(Configs.appBootLaunch)
     var appBootLaunch: Boolean
         get() = _appBootLaunch
