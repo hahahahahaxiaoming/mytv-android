@@ -46,5 +46,7 @@ object SP {
     fun getBoolean(key: String, defValue: Boolean) = safeGet(key, defValue, sp::getBoolean)
     fun putBoolean(key: String, value: Boolean) = sp.edit().putBoolean(key, value).apply()
 
+    fun contains(key: String) = sp.contains(key)
+
     fun clear() = sp.edit().clear().apply()
 }

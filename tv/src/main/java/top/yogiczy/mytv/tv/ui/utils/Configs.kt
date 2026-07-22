@@ -141,6 +141,9 @@ object Configs {
         VIDEO_PLAYER_FORCE_AUDIO_SOFT_DECODE,
     }
 
+    val hasIptvSourceCurrent: Boolean
+        get() = SP.contains(KEY.IPTV_SOURCE_CURRENT.name)
+
     /** ==================== 应用 ==================== */
     /** 开机自启 */
     var appBootLaunch: Boolean

@@ -72,18 +72,20 @@ fun App(
             uiFocusOptimize = settingsViewModel.uiFocusOptimize,
         ),
     ) {
-        PopupHandleableApplication {
-            MainScreen(
-                modifier = modifier,
-                onBackPressed = {
-                    if (doubleBackPressedExitState.allowExit) {
-                        onBackPressed()
-                    } else {
-                        doubleBackPressedExitState.backPress()
-                        Snackbar.show("再按一次退出")
-                    }
-                },
-            )
+        if (settingsViewModel.iptvInitialSourceReady) {
+            PopupHandleableApplication {
+                MainScreen(
+                    modifier = modifier,
+                    onBackPressed = {
+                        if (doubleBackPressedExitState.allowExit) {
+                            onBackPressed()
+                        } else {
+                            doubleBackPressedExitState.backPress()
+                            Snackbar.show("再按一次退出")
+                        }
+                    },
+                )
+            }
         }
 
         SnackbarUI()

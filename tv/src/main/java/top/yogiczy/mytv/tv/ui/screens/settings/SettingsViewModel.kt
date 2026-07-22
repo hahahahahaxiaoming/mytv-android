@@ -20,16 +20,24 @@ import top.yogiczy.mytv.tv.ui.screens.videoplayer.VideoPlayerDisplayMode
 import top.yogiczy.mytv.tv.ui.utils.Configs
 
 class SettingsViewModel : ViewModel() {
+    private val hasSavedIptvSource = Configs.hasIptvSourceCurrent
+
     private var _iptvPresetSourceList by mutableStateOf(Constants.IPTV_SOURCE_LIST)
     val iptvPresetSourceList: IptvSourceList
         get() = _iptvPresetSourceList
+
+    private var _iptvInitialSourceReady by mutableStateOf(hasSavedIptvSource)
+    val iptvInitialSourceReady: Boolean
+        get() = _iptvInitialSourceReady
 
     init {
         viewModelScope.launch {
             runCatching { IptvSourceSettingRepository().fetch() }
                 .onSuccess { remoteList ->
                     _iptvPresetSourceList = IptvSourceList(remoteList + Constants.IPTV_SOURCE_LIST)
+                    if (!hasSavedIptvSource) iptvSourceCurrent = remoteList.first()
                 }
+            _iptvInitialSourceReady = true
         }
     }
 
