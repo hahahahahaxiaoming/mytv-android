@@ -8,6 +8,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import top.yogiczy.mytv.core.data.entities.epg.EpgProgrammeReserveList
 import top.yogiczy.mytv.core.data.entities.epgsource.EpgSource
@@ -15,9 +18,15 @@ import top.yogiczy.mytv.core.data.entities.epgsource.EpgSourceList
 import top.yogiczy.mytv.core.data.entities.iptvsource.IptvSource
 import top.yogiczy.mytv.core.data.entities.iptvsource.IptvSourceList
 import top.yogiczy.mytv.core.data.repositories.iptv.IptvSourceSettingRepository
+import top.yogiczy.mytv.core.data.repositories.iptv.IptvSourceProbeRepository
 import top.yogiczy.mytv.core.data.utils.Constants
 import top.yogiczy.mytv.tv.ui.screens.videoplayer.VideoPlayerDisplayMode
 import top.yogiczy.mytv.tv.ui.utils.Configs
+
+data class IptvSourceCheckProgress(
+    val checked: Int = 0,
+    val total: Int = 0,
+)
 
 class SettingsViewModel : ViewModel() {
     private val hasSavedIptvSource = Configs.hasIptvSourceCurrent
@@ -26,19 +35,62 @@ class SettingsViewModel : ViewModel() {
     val iptvPresetSourceList: IptvSourceList
         get() = _iptvPresetSourceList
 
+    private var _iptvRemoteSourceList by mutableStateOf(IptvSourceList())
+    val iptvRemoteSourceList: IptvSourceList
+        get() = _iptvRemoteSourceList
+
     private var _iptvInitialSourceReady by mutableStateOf(hasSavedIptvSource)
     val iptvInitialSourceReady: Boolean
         get() = _iptvInitialSourceReady
 
+    private var _iptvSourceCheckProgress by mutableStateOf(IptvSourceCheckProgress())
+    val iptvSourceCheckProgress: IptvSourceCheckProgress
+        get() = _iptvSourceCheckProgress
+
     init {
         viewModelScope.launch {
-            runCatching { IptvSourceSettingRepository().fetch() }
-                .onSuccess { remoteList ->
-                    _iptvPresetSourceList = IptvSourceList(remoteList + Constants.IPTV_SOURCE_LIST)
-                    if (!hasSavedIptvSource) iptvSourceCurrent = remoteList.first()
-                }
+            val remoteList = runCatching { IptvSourceSettingRepository().fetch() }.getOrNull()
+            if (remoteList != null) {
+                _iptvRemoteSourceList = remoteList
+            }
+
+            if (!hasSavedIptvSource) {
+                iptvSourceCurrent = remoteList
+                    ?.let { findFirstPlayableSource(it) }
+                    ?: Constants.IPTV_SOURCE_LIST.first()
+            }
+
             _iptvInitialSourceReady = true
         }
+    }
+
+    private suspend fun findFirstPlayableSource(sourceList: IptvSourceList): IptvSource? {
+        _iptvSourceCheckProgress = IptvSourceCheckProgress(total = sourceList.size)
+        val probeRepository = IptvSourceProbeRepository()
+        var checked = 0
+
+        for (batch in sourceList.chunked(SOURCE_PROBE_CONCURRENCY)) {
+            val results = coroutineScope {
+                batch.map { source ->
+                    async {
+                        val playable = runCatching { probeRepository.isPlayable(source) }
+                            .getOrDefault(false)
+                        checked += 1
+                        _iptvSourceCheckProgress =
+                            IptvSourceCheckProgress(checked = checked, total = sourceList.size)
+                        source to playable
+                    }
+                }.awaitAll()
+            }
+
+            results.firstOrNull { it.second }?.let { return it.first }
+        }
+
+        return null
+    }
+
+    private companion object {
+        const val SOURCE_PROBE_CONCURRENCY = 4
     }
 
     private var _appBootLaunch by mutableStateOf(Configs.appBootLaunch)

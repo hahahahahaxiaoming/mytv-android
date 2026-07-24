@@ -39,6 +39,7 @@ import kotlin.math.max
 @Composable
 fun IptvSourceScreen(
     modifier: Modifier = Modifier,
+    remoteIptvSourceListProvider: () -> IptvSourceList = { IptvSourceList() },
     presetIptvSourceListProvider: () -> IptvSourceList = { IptvSourceList() },
     iptvSourceListProvider: () -> IptvSourceList = { IptvSourceList() },
     currentIptvSourceProvider: () -> IptvSource = { IptvSource() },
@@ -46,7 +47,9 @@ fun IptvSourceScreen(
     onIptvSourceDeleted: (IptvSource) -> Unit = {},
     onClose: () -> Unit = {},
 ) {
-    val iptvSourceList = presetIptvSourceListProvider() + iptvSourceListProvider()
+    val remoteIptvSourceList = remoteIptvSourceListProvider()
+    val visibleUrlIptvSourceList = presetIptvSourceListProvider() + iptvSourceListProvider()
+    val iptvSourceList = remoteIptvSourceList + visibleUrlIptvSourceList
     val currentIptvSource = currentIptvSourceProvider()
     val currentIptvSourceIdx = iptvSourceList.indexOf(currentIptvSource)
 
@@ -72,6 +75,7 @@ fun IptvSourceScreen(
                         Modifier.focusOnLaunchedSaveable(iptvSourceList),
                     ),
                     iptvSourceProvider = { source },
+                    showUrlProvider = { index >= remoteIptvSourceList.size },
                     isSelectedProvider = { index == currentIptvSourceIdx },
                     onSelected = { onIptvSourceSelected(source) },
                     onDeleted = {

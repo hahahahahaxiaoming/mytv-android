@@ -45,6 +45,7 @@ import top.yogiczy.mytv.tv.ui.screens.main.MainScreen
 import top.yogiczy.mytv.tv.ui.screens.settings.LocalSettings
 import top.yogiczy.mytv.tv.ui.screens.settings.LocalSettingsCurrent
 import top.yogiczy.mytv.tv.ui.screens.settings.SettingsViewModel
+import top.yogiczy.mytv.tv.ui.screens.startup.StartupSourceCheckScreen
 import top.yogiczy.mytv.tv.ui.tooling.PreviewWithLayoutGrids
 
 @Composable
@@ -72,7 +73,12 @@ fun App(
             uiFocusOptimize = settingsViewModel.uiFocusOptimize,
         ),
     ) {
-        if (settingsViewModel.iptvInitialSourceReady) {
+        if (!settingsViewModel.iptvInitialSourceReady) {
+            StartupSourceCheckScreen(
+                progress = settingsViewModel.iptvSourceCheckProgress,
+                modifier = modifier,
+            )
+        } else {
             PopupHandleableApplication {
                 MainScreen(
                     modifier = modifier,

@@ -221,6 +221,7 @@ fun QuickOpScreeIptvSource(
         onDismissRequest = { isIptvSourceScreenVisible = false },
     ) {
         IptvSourceScreen(
+            remoteIptvSourceListProvider = { settingsViewModel.iptvRemoteSourceList },
             presetIptvSourceListProvider = { settingsViewModel.iptvPresetSourceList },
             iptvSourceListProvider = { settingsViewModel.iptvSourceList },
             currentIptvSourceProvider = { settingsViewModel.iptvSourceCurrent },
