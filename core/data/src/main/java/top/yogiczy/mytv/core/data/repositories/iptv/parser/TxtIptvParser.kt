@@ -13,7 +13,15 @@ import top.yogiczy.mytv.core.data.entities.channel.ChannelList
 class TxtIptvParser : IptvParser {
 
     override fun isSupport(url: String, data: String): Boolean {
-        return data.contains("#genre#")
+        if (data.contains("#genre#")) return true
+
+        return data.lineSequence().any { line ->
+            val parts = line.split(",", "，", limit = 2)
+            parts.size == 2 && parts[1]
+                .trim()
+                .substringBefore("#")
+                .let { it.startsWith("http://") || it.startsWith("https://") || it.startsWith("rtp://") }
+        }
     }
 
     override suspend fun parse(data: String): ChannelGroupList = withContext(Dispatchers.Default) {

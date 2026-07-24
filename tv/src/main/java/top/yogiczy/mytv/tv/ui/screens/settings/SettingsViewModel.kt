@@ -9,7 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import top.yogiczy.mytv.core.data.entities.epg.EpgProgrammeReserveList
@@ -66,31 +66,48 @@ class SettingsViewModel : ViewModel() {
 
     private suspend fun findFirstPlayableSource(sourceList: IptvSourceList): IptvSource? {
         _iptvSourceCheckProgress = IptvSourceCheckProgress(total = sourceList.size)
-        val probeRepository = IptvSourceProbeRepository()
+        val probeRepository = IptvSourceProbeRepository(Configs.videoPlayerUserAgent)
         var checked = 0
+        val batches = buildList {
+            sourceList.firstOrNull()?.let { add(listOf(it)) }
+            addAll(sourceList.drop(1).chunked(SOURCE_PROBE_CONCURRENCY))
+        }
 
-        for (batch in sourceList.chunked(SOURCE_PROBE_CONCURRENCY)) {
-            val results = coroutineScope {
-                batch.map { source ->
+        for (batch in batches) {
+            val playableSource = coroutineScope {
+                val resultChannel = Channel<Pair<IptvSource, Boolean>>(Channel.UNLIMITED)
+                val jobs = batch.map { source ->
                     async {
                         val playable = runCatching { probeRepository.isPlayable(source) }
                             .getOrDefault(false)
                         checked += 1
                         _iptvSourceCheckProgress =
                             IptvSourceCheckProgress(checked = checked, total = sourceList.size)
-                        source to playable
+                        resultChannel.send(source to playable)
                     }
-                }.awaitAll()
+                }
+
+                repeat(jobs.size) {
+                    val result = resultChannel.receive()
+                    if (result.second) {
+                        jobs.forEach { it.cancel() }
+                        resultChannel.cancel()
+                        return@coroutineScope result.first
+                    }
+                }
+
+                resultChannel.cancel()
+                null
             }
 
-            results.firstOrNull { it.second }?.let { return it.first }
+            playableSource?.let { return it }
         }
 
         return null
     }
 
     private companion object {
-        const val SOURCE_PROBE_CONCURRENCY = 4
+        const val SOURCE_PROBE_CONCURRENCY = 8
     }
 
     private var _appBootLaunch by mutableStateOf(Configs.appBootLaunch)
