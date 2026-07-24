@@ -51,6 +51,11 @@ fun LeanbackMainScreen(
     val uiState by mainViewModel.uiState.collectAsState()
 
     when (val s = uiState) {
+        is LeanbackMainUiState.SourceChecking -> LeanbackStartupSourceCheckScreen(
+            checked = s.checked,
+            total = s.total,
+        )
+
         is LeanbackMainUiState.Ready -> LeanbackMainContent(
             modifier = modifier,
             iptvGroupList = s.iptvGroupList,
@@ -64,6 +69,39 @@ fun LeanbackMainScreen(
 
         is LeanbackMainUiState.Error -> LeanbackMainSettingsHandle(onBackPressed = onBackPressed) {
             LeanbackMainScreenError({ s.message })
+        }
+    }
+}
+
+@Composable
+private fun LeanbackStartupSourceCheckScreen(checked: Int, total: Int) {
+    val progress = if (total == 0) 0f else checked.toFloat() / total
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = when {
+                    total == 0 || checked * 10 < total * 4 -> "正在检测直播源"
+                    checked * 10 < total * 7 -> "正在匹配可用线路"
+                    else -> "正在优化直播链路"
+                },
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            androidx.compose.material3.LinearProgressIndicator(
+                progress = { progress.coerceIn(0f, 1f) },
+                modifier = Modifier
+                    .padding(top = 24.dp)
+                    .width(480.dp),
+            )
+            Text(
+                text = "$checked / $total",
+                modifier = Modifier.padding(top = 12.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            )
         }
     }
 }

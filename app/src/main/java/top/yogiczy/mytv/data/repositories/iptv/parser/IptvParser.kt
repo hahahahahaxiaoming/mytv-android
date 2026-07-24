@@ -20,6 +20,7 @@ interface IptvParser {
         val instances = listOf(
             M3uIptvParser(),
             TvboxIptvParser(),
+            TxtIptvParser(),
             DefaultIptvParser(),
         )
     }

@@ -55,6 +55,17 @@ class LeanbackMedia3VideoPlayer(
                 setAllowCrossProtocolRedirects(true)
             })
 
+        if (uri.toString().startsWith("rtp://", ignoreCase = true)) {
+            val mediaSource = ProgressiveMediaSource.Factory(RtpDataSource.Factory())
+                .createMediaSource(MediaItem.fromUri(uri))
+            videoPlayer.setMediaSource(mediaSource)
+            videoPlayer.prepare()
+            triggerPrepared()
+            updatePositionJob?.cancel()
+            updatePositionJob = null
+            return
+        }
+
         val mediaItem = MediaItem.fromUri(uri)
 
         val mediaSource = when (val type = contentType ?: Util.inferContentType(uri)) {

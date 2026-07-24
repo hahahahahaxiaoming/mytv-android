@@ -7,17 +7,20 @@ object Constants {
     /**
      * 应用 标题
      */
-    const val APP_TITLE = "我的电视"
+    const val APP_TITLE = "TV"
 
     /**
      * 应用 代码仓库
      */
-    const val APP_REPO = "https://github.com/yaoxieyoulei/mytv-android"
+    const val APP_REPO = "https://github.com/hahahahahaxiaoming/mytv-android"
+
+    const val IPTV_SOURCE_SETTING_URL =
+        "https://gitee.com/giteesnail/iptv/raw/master/iptv.setting"
 
     /**
      * IPTV源地址
      */
-    const val IPTV_SOURCE_URL = "http://1.2.3.4/live.m3u"
+    const val IPTV_SOURCE_URL = "https://tv.ando.eu.org/list/HunanTV.m3u"
 
     /**
      * IPTV源缓存时间（毫秒）
@@ -38,7 +41,7 @@ object Constants {
      * Git最新版本信息
      */
     const val GIT_RELEASE_LATEST_URL =
-        "https://api.github.com/repos/yaoxieyoulei/mytv-android/releases/latest"
+        "https://api.github.com/repos/hahahahahaxiaoming/mytv-android/releases/latest"
 
     /**
      * GitHub加速代理地址

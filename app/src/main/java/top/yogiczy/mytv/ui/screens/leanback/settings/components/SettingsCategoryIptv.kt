@@ -32,6 +32,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
+import top.yogiczy.mytv.data.entities.IptvSource
 import top.yogiczy.mytv.data.repositories.iptv.IptvRepository
 import top.yogiczy.mytv.data.utils.Constants
 import top.yogiczy.mytv.ui.screens.leanback.components.LeanbackQrcodeDialog
@@ -132,6 +133,7 @@ fun LeanbackSettingsCategoryIptv(
 
             LeanbackSettingsIptvSourceHistoryDialog(showDialogProvider = { showDialog },
                 onDismissRequest = { showDialog = false },
+                remoteSourceProvider = { settingsViewModel.iptvRemoteSourceList },
                 iptvSourceHistoryProvider = {
                     settingsViewModel.iptvSourceUrlHistoryList.filter {
                         it != Constants.IPTV_SOURCE_URL
@@ -169,12 +171,19 @@ private fun LeanbackSettingsIptvSourceHistoryDialog(
     modifier: Modifier = Modifier,
     showDialogProvider: () -> Boolean = { false },
     onDismissRequest: () -> Unit = {},
+    remoteSourceProvider: () -> List<IptvSource> = { emptyList() },
     iptvSourceHistoryProvider: () -> ImmutableList<String> = { persistentListOf() },
     currentIptvSourceProvider: () -> String = { Constants.IPTV_SOURCE_URL },
     onSelected: (String) -> Unit = {},
     onDeleted: (String) -> Unit = {},
 ) {
-    val iptvSourceHistory = listOf(Constants.IPTV_SOURCE_URL) + iptvSourceHistoryProvider()
+    val remoteSources = remoteSourceProvider()
+    val remoteLabels = remoteSources.associate { it.url to it.name }
+    val iptvSourceHistory = (
+        listOf(Constants.IPTV_SOURCE_URL) +
+            remoteSources.map { it.url } +
+            iptvSourceHistoryProvider()
+        ).distinct()
     val currentIptvSource = currentIptvSourceProvider()
 
     if (showDialogProvider()) {
@@ -223,7 +232,11 @@ private fun LeanbackSettingsIptvSourceHistoryDialog(
                             onClick = { },
                             headlineContent = {
                                 androidx.tv.material3.Text(
-                                    text = if (source == Constants.IPTV_SOURCE_URL) "默认直播源（网络需要支持ipv6）" else source,
+                                    text = when {
+                                        source == Constants.IPTV_SOURCE_URL -> "预置直播源"
+                                        source in remoteLabels -> "远程 · ${remoteLabels.getValue(source)}\n$source"
+                                        else -> "历史 · $source"
+                                    },
                                     modifier = Modifier.fillMaxWidth(),
                                     maxLines = if (isFocused) Int.MAX_VALUE else 2,
                                 )

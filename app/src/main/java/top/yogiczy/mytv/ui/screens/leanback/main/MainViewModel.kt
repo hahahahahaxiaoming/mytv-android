@@ -3,6 +3,9 @@ package top.yogiczy.mytv.ui.screens.leanback.main
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,9 +18,12 @@ import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.launch
 import top.yogiczy.mytv.data.entities.EpgList
 import top.yogiczy.mytv.data.entities.IptvGroupList
+import top.yogiczy.mytv.data.entities.IptvSource
 import top.yogiczy.mytv.data.entities.IptvGroupList.Companion.iptvList
 import top.yogiczy.mytv.data.repositories.epg.EpgRepository
 import top.yogiczy.mytv.data.repositories.iptv.IptvRepository
+import top.yogiczy.mytv.data.repositories.iptv.IptvSourceProbeRepository
+import top.yogiczy.mytv.data.repositories.iptv.IptvSourceSettingRepository
 import top.yogiczy.mytv.data.utils.Constants
 import top.yogiczy.mytv.ui.utils.SP
 
@@ -30,8 +36,54 @@ class LeanbackMainViewModel : ViewModel() {
 
     init {
         viewModelScope.launch {
+            selectInitialSource()
             refreshIptv()
             refreshEpg()
+        }
+    }
+
+    private suspend fun selectInitialSource() {
+        val remoteSources = runCatching { IptvSourceSettingRepository().fetch() }
+            .getOrDefault(emptyList())
+        val current = IptvSource("当前直播源", SP.iptvSourceUrl)
+        val candidates = (listOf(current) + remoteSources).distinctBy { it.url }
+        if (candidates.isEmpty()) return
+
+        val probeRepository = IptvSourceProbeRepository(SP.videoPlayerUserAgent)
+        var checked = 0
+        _uiState.value = LeanbackMainUiState.SourceChecking(checked, candidates.size)
+        val batches = buildList {
+            add(listOf(candidates.first()))
+            addAll(candidates.drop(1).chunked(SOURCE_PROBE_CONCURRENCY))
+        }
+        for (batch in batches) {
+            val playable = coroutineScope {
+                val results = Channel<Pair<IptvSource, Boolean>>(Channel.UNLIMITED)
+                val jobs = batch.map { source ->
+                    async {
+                        val result = runCatching { probeRepository.isPlayable(source) }
+                            .getOrDefault(false)
+                        results.send(source to result)
+                    }
+                }
+                repeat(jobs.size) {
+                    val result = results.receive()
+                    checked += 1
+                    _uiState.value = LeanbackMainUiState.SourceChecking(checked, candidates.size)
+                    if (result.second) {
+                        jobs.forEach { it.cancel() }
+                        results.cancel()
+                        return@coroutineScope result.first
+                    }
+                }
+                results.cancel()
+                null
+            }
+            if (playable != null) {
+                SP.iptvSourceUrl = playable.url
+                SP.iptvSourceUrlHistoryList += playable.url
+                return
+            }
         }
     }
 
@@ -91,9 +143,14 @@ class LeanbackMainViewModel : ViewModel() {
                 .collect()
         }
     }
+
+    private companion object {
+        const val SOURCE_PROBE_CONCURRENCY = 8
+    }
 }
 
 sealed interface LeanbackMainUiState {
+    data class SourceChecking(val checked: Int, val total: Int) : LeanbackMainUiState
     data class Loading(val message: String? = null) : LeanbackMainUiState
     data class Error(val message: String? = null) : LeanbackMainUiState
     data class Ready(

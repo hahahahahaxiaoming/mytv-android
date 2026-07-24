@@ -7,9 +7,23 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
+import top.yogiczy.mytv.data.entities.IptvSource
+import top.yogiczy.mytv.data.repositories.iptv.IptvSourceSettingRepository
 import top.yogiczy.mytv.ui.utils.SP
 
 class LeanbackSettingsViewModel : ViewModel() {
+    var iptvRemoteSourceList: List<IptvSource> by mutableStateOf(emptyList())
+        private set
+
+    init {
+        viewModelScope.launch {
+            iptvRemoteSourceList = runCatching { IptvSourceSettingRepository().fetch() }
+                .getOrDefault(emptyList())
+        }
+    }
+
     private var _appBootLaunch by mutableStateOf(SP.appBootLaunch)
     var appBootLaunch: Boolean
         get() = _appBootLaunch
