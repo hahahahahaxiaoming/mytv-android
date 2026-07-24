@@ -125,7 +125,6 @@ fun LeanbackSettingsCategoryIptv(
 
             LeanbackSettingsCategoryListItem(
                 headlineContent = "自定义直播源",
-                supportingContent = if (settingsViewModel.iptvSourceUrl != Constants.IPTV_SOURCE_URL) settingsViewModel.iptvSourceUrl else null,
                 trailingContent = if (settingsViewModel.iptvSourceUrl != Constants.IPTV_SOURCE_URL) "已启用" else "未启用",
                 onSelected = { showDialog = true },
                 remoteConfig = true,
@@ -180,8 +179,8 @@ private fun LeanbackSettingsIptvSourceHistoryDialog(
     val remoteSources = remoteSourceProvider()
     val remoteLabels = remoteSources.associate { it.url to it.name }
     val iptvSourceHistory = (
-        listOf(Constants.IPTV_SOURCE_URL) +
-            remoteSources.map { it.url } +
+        remoteSources.map { it.url } +
+            listOf(Constants.IPTV_SOURCE_URL) +
             iptvSourceHistoryProvider()
         ).distinct()
     val currentIptvSource = currentIptvSourceProvider()
@@ -233,8 +232,9 @@ private fun LeanbackSettingsIptvSourceHistoryDialog(
                             headlineContent = {
                                 androidx.tv.material3.Text(
                                     text = when {
-                                        source == Constants.IPTV_SOURCE_URL -> "预置直播源"
-                                        source in remoteLabels -> "远程 · ${remoteLabels.getValue(source)}\n$source"
+                                        source in remoteLabels -> "远程 · ${remoteLabels.getValue(source)}"
+                                        source == Constants.IPTV_SOURCE_URL ->
+                                            "本地 · 默认直播源 全国（IPV4/IPV6）"
                                         else -> "历史 · $source"
                                     },
                                     modifier = Modifier.fillMaxWidth(),

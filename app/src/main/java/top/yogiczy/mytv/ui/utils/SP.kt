@@ -50,6 +50,8 @@ object SP {
         /** 直播源url */
         IPTV_SOURCE_URL,
 
+        IPTV_INITIAL_SOURCE_SELECTED,
+
         /** 直播源缓存时间（毫秒） */
         IPTV_SOURCE_CACHE_TIME,
 
@@ -166,6 +168,11 @@ object SP {
         get() = (sp.getString(KEY.IPTV_SOURCE_URL.name, "")
             ?: "").ifBlank { Constants.IPTV_SOURCE_URL }
         set(value) = sp.edit().putString(KEY.IPTV_SOURCE_URL.name, value).apply()
+
+    /** Whether initial cloud source selection has completed. */
+    var iptvInitialSourceSelected: Boolean
+        get() = sp.getBoolean(KEY.IPTV_INITIAL_SOURCE_SELECTED.name, false)
+        set(value) = sp.edit().putBoolean(KEY.IPTV_INITIAL_SOURCE_SELECTED.name, value).apply()
 
     /** 直播源缓存时间（毫秒） */
     var iptvSourceCacheTime: Long

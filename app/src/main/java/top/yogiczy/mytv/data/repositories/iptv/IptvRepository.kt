@@ -57,8 +57,10 @@ class IptvRepository : FileCacheRepository("iptv.txt") {
         simplify: Boolean = false,
     ): IptvGroupList {
         try {
-            val sourceData = getOrRefresh(cacheTime) {
+            val sourceData = if (cacheTime <= 0) {
                 fetchSource(sourceUrl)
+            } else {
+                getOrRefresh(cacheTime) { fetchSource(sourceUrl) }
             }
 
             val parser = IptvParser.instances.first { it.isSupport(sourceUrl, sourceData) }

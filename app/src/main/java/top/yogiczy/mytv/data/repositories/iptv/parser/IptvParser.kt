@@ -19,8 +19,8 @@ interface IptvParser {
     companion object {
         val instances = listOf(
             M3uIptvParser(),
-            TvboxIptvParser(),
             TxtIptvParser(),
+            TvboxIptvParser(),
             DefaultIptvParser(),
         )
     }

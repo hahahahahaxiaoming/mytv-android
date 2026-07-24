@@ -27,7 +27,7 @@ class M3uIptvParser : IptvParser {
                     name = name.trim(),
                     channelName = channelName.trim(),
                     groupName = groupName.trim(),
-                    url = lines[index + 1].trim(),
+                    url = normalizeIptvStreamUrl(lines[index + 1]),
                 )
             )
         }

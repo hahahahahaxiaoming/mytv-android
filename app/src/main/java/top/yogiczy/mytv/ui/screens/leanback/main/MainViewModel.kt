@@ -36,26 +36,26 @@ class LeanbackMainViewModel : ViewModel() {
 
     init {
         viewModelScope.launch {
-            selectInitialSource()
+            if (!SP.iptvInitialSourceSelected) selectInitialSource()
             refreshIptv()
             refreshEpg()
         }
     }
 
     private suspend fun selectInitialSource() {
+        _uiState.value = LeanbackMainUiState.SourceChecking(checked = 0, total = 0)
         val remoteSources = runCatching { IptvSourceSettingRepository().fetch() }
             .getOrDefault(emptyList())
-        val current = IptvSource("当前直播源", SP.iptvSourceUrl)
-        val candidates = (listOf(current) + remoteSources).distinctBy { it.url }
-        if (candidates.isEmpty()) return
+        val candidates = remoteSources.distinctBy { it.url }
+        if (candidates.isEmpty()) {
+            SP.iptvSourceUrl = Constants.IPTV_SOURCE_URL
+            return
+        }
 
         val probeRepository = IptvSourceProbeRepository(SP.videoPlayerUserAgent)
         var checked = 0
         _uiState.value = LeanbackMainUiState.SourceChecking(checked, candidates.size)
-        val batches = buildList {
-            add(listOf(candidates.first()))
-            addAll(candidates.drop(1).chunked(SOURCE_PROBE_CONCURRENCY))
-        }
+        val batches = candidates.chunked(SOURCE_PROBE_CONCURRENCY)
         for (batch in batches) {
             val playable = coroutineScope {
                 val results = Channel<Pair<IptvSource, Boolean>>(Channel.UNLIMITED)
@@ -82,9 +82,12 @@ class LeanbackMainViewModel : ViewModel() {
             if (playable != null) {
                 SP.iptvSourceUrl = playable.url
                 SP.iptvSourceUrlHistoryList += playable.url
+                SP.iptvInitialSourceSelected = true
                 return
             }
         }
+        SP.iptvSourceUrl = Constants.IPTV_SOURCE_URL
+        SP.iptvInitialSourceSelected = true
     }
 
     private suspend fun refreshIptv() {

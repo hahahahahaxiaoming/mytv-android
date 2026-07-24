@@ -1,15 +1,13 @@
 package top.yogiczy.mytv.data.repositories.iptv
 
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import top.yogiczy.mytv.data.entities.Iptv
 import top.yogiczy.mytv.data.entities.IptvSource
+import top.yogiczy.mytv.data.repositories.iptv.parser.normalizeIptvStreamUrl
 import java.net.DatagramPacket
 import java.net.InetAddress
 import java.net.InetSocketAddress
@@ -18,46 +16,38 @@ import java.util.concurrent.TimeUnit
 
 class IptvSourceProbeRepository(private val userAgent: String) {
     private val client = OkHttpClient.Builder()
-        .connectTimeout(6, TimeUnit.SECONDS)
-        .readTimeout(6, TimeUnit.SECONDS)
+        .connectTimeout(5, TimeUnit.SECONDS)
+        .readTimeout(5, TimeUnit.SECONDS)
         .callTimeout(8, TimeUnit.SECONDS)
         .build()
 
-    suspend fun isPlayable(source: IptvSource): Boolean = withTimeoutOrNull(18_000) {
+    suspend fun isPlayable(source: IptvSource): Boolean = withTimeoutOrNull(12_000) {
         val channels = IptvRepository()
             .getIptvGroupList(source.url, cacheTime = 0)
             .flatMap { it.iptvList }
-        val channel = channels.firstOrNull(::isCctv1) ?: channels.firstOrNull()
-        probeAny(channel?.urlList.orEmpty())
+        val cctv1Url = (channels.firstOrNull(::isCctv1) ?: channels.firstOrNull())
+            ?.urlList
+            ?.firstOrNull()
+        if (cctv1Url == null) false else probeUrl(cctv1Url)
     } ?: false
 
-    private fun isCctv1(channel: Iptv): Boolean {
-        val names = listOf(channel.name, channel.channelName).map(String::trim)
-        return names.any {
-            CCTV1_NAME_REGEX.containsMatchIn(it) ||
-                it.startsWith("央视一套") || it.startsWith("中央一套") || it.startsWith("中央1")
+    private fun isCctv1(channel: Iptv): Boolean =
+        listOf(channel.name, channel.channelName).any { name ->
+            val normalized = name.trim()
+            CCTV1_NAME_REGEX.containsMatchIn(normalized) ||
+                normalized.startsWith("央视一套") ||
+                normalized.startsWith("中央一套") ||
+                normalized.startsWith("中央1")
         }
-    }
 
-    private suspend fun probeAny(urls: List<String>): Boolean = coroutineScope {
-        if (urls.isEmpty()) return@coroutineScope false
-        val results = Channel<Boolean>(Channel.UNLIMITED)
-        val jobs = urls.map { url -> async { results.send(probeUrl(url)) } }
-        repeat(jobs.size) {
-            if (results.receive()) {
-                jobs.forEach { it.cancel() }
-                results.cancel()
-                return@coroutineScope true
-            }
-        }
-        results.cancel()
-        false
-    }
-
-    private suspend fun probeUrl(url: String): Boolean = when {
-        url.startsWith("rtp://", true) -> probeRtp(url)
-        url.startsWith("http://", true) || url.startsWith("https://", true) -> probeHttp(url)
+    private suspend fun probeUrl(url: String): Boolean {
+        val normalizedUrl = normalizeIptvStreamUrl(url)
+        return when {
+        normalizedUrl.startsWith("rtp://", true) -> probeRtp(normalizedUrl)
+        normalizedUrl.startsWith("http://", true) ||
+            normalizedUrl.startsWith("https://", true) -> probeHttp(normalizedUrl)
         else -> false
+        }
     }
 
     private suspend fun probeHttp(url: String): Boolean = withContext(Dispatchers.IO) {
@@ -93,10 +83,10 @@ class IptvSourceProbeRepository(private val userAgent: String) {
     }
 
     private companion object {
-        val CCTV1_NAME_REGEX = Regex("^CCTV\\s*[-_]?\\s*0*1(?![0-9+])", RegexOption.IGNORE_CASE)
+        val CCTV1_NAME_REGEX =
+            Regex("^CCTV\\s*[-_]?\\s*0*1(?![0-9+])", RegexOption.IGNORE_CASE)
         const val HTTP_PROBE_BUFFER_SIZE = 4 * 1024
         const val RTP_PROBE_BUFFER_SIZE = 64 * 1024
         const val RTP_PACKET_TIMEOUT_MS = 8_000
     }
 }
-
