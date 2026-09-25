@@ -307,39 +307,6 @@ object ChannelUtil {
         "CCTV-17农村" to listOf(
             "https://tv.cctv.com/live/cctv17/",
         ),
-        "CCTV-4K超高清" to listOf(
-            "https://yangshipin.cn/tv/home?pid=600002264",
-        ),
-        "CCTV-8K超高清" to listOf(
-            "https://yangshipin.cn/tv/home?pid=600156816",
-        ),
-        "CGTN英语" to listOf(
-            "https://yangshipin.cn/tv/home?pid=600014550",
-        ),
-        "CGTN纪录" to listOf(
-            "https://yangshipin.cn/tv/home?pid=600084781",
-        ),
-        "CGTN俄语" to listOf(
-            "https://yangshipin.cn/tv/home?pid=600084758",
-        ),
-        "CGTN法语" to listOf(
-            "https://yangshipin.cn/tv/home?pid=600084704",
-        ),
-        "CGTN西语" to listOf(
-            "https://yangshipin.cn/tv/home?pid=600084744",
-        ),
-        "CGTN阿语" to listOf(
-            "https://yangshipin.cn/tv/home?pid=600084782",
-        ),
-        "CCTV风云剧场" to listOf(
-            "https://yangshipin.cn/tv/home?pid=600099658",
-        ),
-        "CCTV第一剧场" to listOf(
-            "https://yangshipin.cn/tv/home?pid=600099655",
-        ),
-        "CCTV怀旧剧场" to listOf(
-            "https://yangshipin.cn/tv/home?pid=600099620",
-        ),
         "北京卫视" to listOf(
             "https://yangshipin.cn/tv/home?pid=600002309",
         ),
@@ -433,6 +400,39 @@ object ChannelUtil {
         "西藏卫视" to listOf(
             "https://yangshipin.cn/tv/home?pid=600190403",
         ),
+        "CCTV-4K超高清" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600002264",
+        ),
+        "CCTV-8K超高清" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600156816",
+        ),
+        "CGTN英语" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600014550",
+        ),
+        "CGTN纪录" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600084781",
+        ),
+        "CGTN俄语" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600084758",
+        ),
+        "CGTN法语" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600084704",
+        ),
+        "CGTN西语" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600084744",
+        ),
+        "CGTN阿语" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600084782",
+        ),
+        "CCTV风云剧场" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600099658",
+        ),
+        "CCTV第一剧场" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600099655",
+        ),
+        "CCTV怀旧剧场" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600099620",
+        ),
     )
 
     private fun standardChannelName(name: String): String {
@@ -465,7 +465,7 @@ object ChannelUtil {
         return ChannelGroupList(
             listOf(
                 ChannelGroup(
-                    name = "网页直播",
+                    name = "直播",
                     channelList = ChannelList(channels),
                 )
             )
