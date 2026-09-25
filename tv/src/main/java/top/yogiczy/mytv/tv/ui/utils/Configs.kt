@@ -243,7 +243,7 @@ object Configs {
     /** 混合模式 */
     var iptvHybridMode: IptvHybridMode
         get() = IptvHybridMode.fromValue(
-            SP.getInt(KEY.IPTV_HYBRID_MODE.name, IptvHybridMode.DISABLE.value)
+            SP.getInt(KEY.IPTV_HYBRID_MODE.name, IptvHybridMode.HYBRID_FIRST.value)
         )
         set(value) = SP.putInt(KEY.IPTV_HYBRID_MODE.name, value.value)
 

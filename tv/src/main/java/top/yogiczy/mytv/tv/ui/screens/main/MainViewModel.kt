@@ -44,6 +44,16 @@ class MainViewModel : ViewModel() {
     }
 
     private suspend fun refreshChannel() {
+        // 网页模式：选中"本地(NULL)"或地址为空 → 直接加载网页直播（央视+卫视）
+        if (Configs.iptvSourceCurrent.url.isBlank()
+            || Configs.iptvSourceCurrent.url.equals("NULL", ignoreCase = true)
+        ) {
+            _uiState.value = MainUiState.Ready(
+                channelGroupList = ChannelUtil.getHybridFallbackChannelGroupList()
+            )
+            return
+        }
+
         flow {
             emit(
                 IptvRepository(Configs.iptvSourceCurrent).getChannelGroupList(cacheTime = Configs.iptvSourceCacheTime)
@@ -58,7 +68,11 @@ class MainViewModel : ViewModel() {
                 true
             }
             .catch {
-                _uiState.value = MainUiState.Error(it.message)
+                // 云端直播源不可用 → 兜底启用网页直播（央视+卫视官方页）
+                _uiState.value = MainUiState.Ready(
+                    channelGroupList = ChannelUtil.getHybridFallbackChannelGroupList()
+                )
+                Snackbar.show("云端直播源不可用，已启用网页直播")
             }
             .map { hybridChannel(it) }
             .map {
@@ -68,8 +82,18 @@ class MainViewModel : ViewModel() {
             .collect()
     }
 
+    /**
+     * 仅限源名称含"全国"的直播源启用混合模式（WebView 官方页优先），
+     * 其余源保持纯 m3u 播放。
+     * 匹配内置默认源、全国自动更新、全国cs3306 等；组播/单播等不启用。
+     */
     private suspend fun hybridChannel(channelGroupList: ChannelGroupList) =
         withContext(Dispatchers.Default) {
+            // 当前直播源名称不含"全国" → 不注入网页地址，保持原样
+            if (!Configs.iptvSourceCurrent.name.contains("全国")) {
+                return@withContext channelGroupList
+            }
+
             val hybridMode = Configs.iptvHybridMode
             return@withContext when (hybridMode) {
                 Configs.IptvHybridMode.DISABLE -> channelGroupList

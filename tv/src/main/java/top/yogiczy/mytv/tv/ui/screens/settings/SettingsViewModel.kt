@@ -55,9 +55,13 @@ class SettingsViewModel : ViewModel() {
             }
 
             if (!hasSavedIptvSource) {
+                // 首次匹配：探测云端源列表（跳过"全国"聚合源），
+                // 找到可播的单播/组播源则采用；否则直接使用「本地」(NULL) → 网页直播
                 iptvSourceCurrent = remoteList
                     ?.let { findFirstPlayableSource(it) }
-                    ?: Constants.IPTV_SOURCE_LIST.first()
+                    ?: Constants.IPTV_SOURCE_LIST.firstOrNull {
+                        it.url.isBlank() || it.url.equals("NULL", ignoreCase = true)
+                    } ?: Constants.IPTV_SOURCE_LIST.first()
             }
 
             _iptvInitialSourceReady = true
@@ -65,12 +69,17 @@ class SettingsViewModel : ViewModel() {
     }
 
     private suspend fun findFirstPlayableSource(sourceList: IptvSourceList): IptvSource? {
-        _iptvSourceCheckProgress = IptvSourceCheckProgress(total = sourceList.size)
+        // 跳过名称含"全国"的源：全国聚合源不走自动匹配，仅手动选用；
+        // 只有单播/组播等源参与首次智能优选
+        val candidates = sourceList.filter { !it.name.contains("全国") }
+        if (candidates.isEmpty()) return null
+
+        _iptvSourceCheckProgress = IptvSourceCheckProgress(total = candidates.size)
         val probeRepository = IptvSourceProbeRepository(Configs.videoPlayerUserAgent)
         var checked = 0
         val batches = buildList {
-            sourceList.firstOrNull()?.let { add(listOf(it)) }
-            addAll(sourceList.drop(1).chunked(SOURCE_PROBE_CONCURRENCY))
+            candidates.firstOrNull()?.let { add(listOf(it)) }
+            addAll(candidates.drop(1).chunked(SOURCE_PROBE_CONCURRENCY))
         }
 
         for (batch in batches) {
@@ -82,7 +91,7 @@ class SettingsViewModel : ViewModel() {
                             .getOrDefault(false)
                         checked += 1
                         _iptvSourceCheckProgress =
-                            IptvSourceCheckProgress(checked = checked, total = sourceList.size)
+                            IptvSourceCheckProgress(checked = checked, total = candidates.size)
                         resultChannel.send(source to playable)
                     }
                 }

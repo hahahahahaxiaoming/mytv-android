@@ -1,11 +1,78 @@
 package top.yogiczy.mytv.core.data.utils
 
+import top.yogiczy.mytv.core.data.entities.channel.Channel
+import top.yogiczy.mytv.core.data.entities.channel.ChannelGroup
+import top.yogiczy.mytv.core.data.entities.channel.ChannelGroupList
+import top.yogiczy.mytv.core.data.entities.channel.ChannelList
+
 object ChannelUtil {
     private fun standardCctvChannelNameTest(keys: List<List<String>>): (String) -> Boolean {
         return { name: String -> keys.any { it.all { word -> word.lowercase() in name.lowercase() } } }
     }
 
     private val standardChannelNameTest: Map<String, (String) -> Boolean> = mapOf(
+        "CCTV-4K超高清" to standardCctvChannelNameTest(
+            listOf(
+                listOf("cctv", "4k"),
+                listOf("中央", "4k"),
+            )
+        ),
+        "CCTV-8K超高清" to standardCctvChannelNameTest(
+            listOf(
+                listOf("cctv", "8k"),
+                listOf("中央", "8k"),
+            )
+        ),
+        "CGTN英语" to standardCctvChannelNameTest(
+            listOf(
+                listOf("cgtn", "英语"),
+                listOf("cgtn", "english"),
+                listOf("cgtn", "英文"),
+            )
+        ),
+        "CGTN纪录" to standardCctvChannelNameTest(
+            listOf(
+                listOf("cgtn", "纪录"),
+                listOf("cgtn", "记录"),
+            )
+        ),
+        "CGTN俄语" to standardCctvChannelNameTest(
+            listOf(
+                listOf("cgtn", "俄语"),
+            )
+        ),
+        "CGTN法语" to standardCctvChannelNameTest(
+            listOf(
+                listOf("cgtn", "法语"),
+            )
+        ),
+        "CGTN西语" to standardCctvChannelNameTest(
+            listOf(
+                listOf("cgtn", "西语"),
+                listOf("cgtn", "西班牙"),
+            )
+        ),
+        "CGTN阿语" to standardCctvChannelNameTest(
+            listOf(
+                listOf("cgtn", "阿语"),
+                listOf("cgtn", "阿拉伯"),
+            )
+        ),
+        "CCTV风云剧场" to standardCctvChannelNameTest(
+            listOf(
+                listOf("风云剧场"),
+            )
+        ),
+        "CCTV第一剧场" to standardCctvChannelNameTest(
+            listOf(
+                listOf("第一剧场"),
+            )
+        ),
+        "CCTV怀旧剧场" to standardCctvChannelNameTest(
+            listOf(
+                listOf("怀旧剧场"),
+            )
+        ),
         "CCTV-5+赛事" to standardCctvChannelNameTest(
             listOf(
                 listOf("cctv", "5+"),
@@ -56,7 +123,6 @@ object ChannelUtil {
                 listOf("cctv", "少儿"),
                 listOf("中央", "14"),
                 listOf("中央", "十四"),
-                listOf("中央", "少儿"),
                 listOf("中央", "少儿"),
             )
         ),
@@ -241,6 +307,39 @@ object ChannelUtil {
         "CCTV-17农村" to listOf(
             "https://tv.cctv.com/live/cctv17/",
         ),
+        "CCTV-4K超高清" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600002264",
+        ),
+        "CCTV-8K超高清" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600156816",
+        ),
+        "CGTN英语" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600014550",
+        ),
+        "CGTN纪录" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600084781",
+        ),
+        "CGTN俄语" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600084758",
+        ),
+        "CGTN法语" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600084704",
+        ),
+        "CGTN西语" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600084744",
+        ),
+        "CGTN阿语" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600084782",
+        ),
+        "CCTV风云剧场" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600099658",
+        ),
+        "CCTV第一剧场" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600099655",
+        ),
+        "CCTV怀旧剧场" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600099620",
+        ),
         "北京卫视" to listOf(
             "https://yangshipin.cn/tv/home?pid=600002309",
         ),
@@ -304,6 +403,36 @@ object ChannelUtil {
         "山东卫视" to listOf(
             "https://yangshipin.cn/tv/home?pid=600002513",
         ),
+        "天津卫视" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600152137",
+        ),
+        "吉林卫视" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600190405",
+        ),
+        "陕西卫视" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600190400",
+        ),
+        "甘肃卫视" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600190408",
+        ),
+        "宁夏卫视" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600190737",
+        ),
+        "内蒙古卫视" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600190401",
+        ),
+        "云南卫视" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600190402",
+        ),
+        "山西卫视" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600190407",
+        ),
+        "青海卫视" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600190406",
+        ),
+        "西藏卫视" to listOf(
+            "https://yangshipin.cn/tv/home?pid=600190403",
+        ),
     )
 
     private fun standardChannelName(name: String): String {
@@ -319,6 +448,28 @@ object ChannelUtil {
 
     fun isHybridWebViewUrl(url: String): Boolean {
         return url.startsWith(HYBRID_WEB_VIEW_URL_PREFIX)
+    }
+
+    /**
+     * 网页直播兜底频道列表：共 60 台（央视 29 + 卫视 31），内置官方页
+     * 用于：选中"本地(NULL)"源，或云端直播源不可用时
+     */
+    fun getHybridFallbackChannelGroupList(): ChannelGroupList {
+        val channels = hybridWebViewUrl.map { (name, urls) ->
+            Channel(
+                name = name,
+                epgName = name,
+                urlList = urls.map { "$HYBRID_WEB_VIEW_URL_PREFIX$it" },
+            )
+        }
+        return ChannelGroupList(
+            listOf(
+                ChannelGroup(
+                    name = "网页直播",
+                    channelList = ChannelList(channels),
+                )
+            )
+        )
     }
 
     fun getHybridWebViewUrlProvider(url: String): String {

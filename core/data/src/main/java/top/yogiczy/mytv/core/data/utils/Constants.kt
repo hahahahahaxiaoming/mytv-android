@@ -29,8 +29,8 @@ object Constants {
     val IPTV_SOURCE_LIST = IptvSourceList(
         listOf(
             IptvSource(
-                name = "默认直播源 全国（IPV4/IPV6）",
-                url = "https://tv.ando.eu.org/list/HunanTV.m3u",
+                name = "默认直播源",
+                url = "NULL",
             ),
         )
     )

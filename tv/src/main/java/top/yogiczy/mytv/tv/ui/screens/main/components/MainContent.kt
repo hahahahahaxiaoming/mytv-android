@@ -150,6 +150,16 @@ fun MainContent(
                     )
                     mainContentState.isTempChannelScreenVisible = false
                 },
+                onError = {
+                    // WebView 出错或超时，自动切到下一条线路（备用网页 / m3u）
+                    val errIdx = mainContentState.currentChannelUrlIdx
+                    if (errIdx < mainContentState.currentChannel.urlList.size - 1) {
+                        mainContentState.changeCurrentChannel(
+                            mainContentState.currentChannel,
+                            errIdx + 1,
+                        )
+                    }
+                },
             )
         }
     }
