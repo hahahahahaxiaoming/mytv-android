@@ -190,7 +190,9 @@ object Configs {
     /** 当前直播源 */
     var iptvSourceCurrent: IptvSource
         get() = Json.decodeFromString(SP.getString(KEY.IPTV_SOURCE_CURRENT.name, "")
-            .ifBlank { Json.encodeToString(Constants.IPTV_SOURCE_LIST.first()) })
+            .ifBlank { Json.encodeToString(
+                Constants.IPTV_SOURCE_LIST.firstOrNull() ?: Constants.WEB_FALLBACK_SOURCE
+            ) })
         set(value) = SP.putString(KEY.IPTV_SOURCE_CURRENT.name, Json.encodeToString(value))
 
     /** 直播源列表 */
@@ -240,10 +242,10 @@ object Configs {
         get() = SP.getStringSet(KEY.IPTV_CHANNEL_GROUP_HIDDEN_LIST.name, emptySet())
         set(value) = SP.putStringSet(KEY.IPTV_CHANNEL_GROUP_HIDDEN_LIST.name, value)
 
-    /** 混合模式 */
+    /** 混合模式（已关闭：不再注入网页线路，保留字段兼容旧设置数据） */
     var iptvHybridMode: IptvHybridMode
         get() = IptvHybridMode.fromValue(
-            SP.getInt(KEY.IPTV_HYBRID_MODE.name, IptvHybridMode.HYBRID_FIRST.value)
+            SP.getInt(KEY.IPTV_HYBRID_MODE.name, IptvHybridMode.DISABLE.value)
         )
         set(value) = SP.putInt(KEY.IPTV_HYBRID_MODE.name, value.value)
 

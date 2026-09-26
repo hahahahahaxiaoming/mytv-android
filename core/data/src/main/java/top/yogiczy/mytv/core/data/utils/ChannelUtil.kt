@@ -451,7 +451,7 @@ object ChannelUtil {
     }
 
     /**
-     * 网页直播兜底频道列表：共 60 台（央视 29 + 卫视 31），内置官方页
+     * 全国直播兜底频道列表：共 60 台（央视 29 + 卫视 31），内置官方页
      * 用于：选中"本地(NULL)"源，或云端直播源不可用时
      */
     fun getHybridFallbackChannelGroupList(): ChannelGroupList {

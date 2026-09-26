@@ -31,7 +31,9 @@ data class IptvSourceCheckProgress(
 class SettingsViewModel : ViewModel() {
     private val hasSavedIptvSource = Configs.hasIptvSourceCurrent
 
-    private var _iptvPresetSourceList by mutableStateOf(Constants.IPTV_SOURCE_LIST)
+    private var _iptvPresetSourceList by mutableStateOf(
+        IptvSourceList(Constants.IPTV_SOURCE_LIST.value + Constants.WEB_FALLBACK_SOURCE)
+    )
     val iptvPresetSourceList: IptvSourceList
         get() = _iptvPresetSourceList
 
@@ -56,12 +58,13 @@ class SettingsViewModel : ViewModel() {
 
             if (!hasSavedIptvSource) {
                 // 首次匹配：探测云端源列表（跳过"全国"聚合源），
-                // 找到可播的单播/组播源则采用；否则直接使用「本地」(NULL) → 网页直播
+                // 找到可播的单播/组播源则采用；否则直接使用「本地」(NULL) → 全国直播
                 iptvSourceCurrent = remoteList
                     ?.let { findFirstPlayableSource(it) }
                     ?: Constants.IPTV_SOURCE_LIST.firstOrNull {
                         it.url.isBlank() || it.url.equals("NULL", ignoreCase = true)
-                    } ?: Constants.IPTV_SOURCE_LIST.first()
+                    } ?: Constants.IPTV_SOURCE_LIST.firstOrNull()
+                    ?: Constants.WEB_FALLBACK_SOURCE
             }
 
             _iptvInitialSourceReady = true
@@ -263,14 +266,6 @@ class SettingsViewModel : ViewModel() {
             Configs.iptvChannelGroupHiddenList = value
         }
 
-    private var _iptvHybridMode by mutableStateOf(Configs.iptvHybridMode)
-    var iptvHybridMode: Configs.IptvHybridMode
-        get() = _iptvHybridMode
-        set(value) {
-            _iptvHybridMode = value
-            Configs.iptvHybridMode = value
-        }
-
     private var _epgEnable by mutableStateOf(Configs.epgEnable)
     var epgEnable: Boolean
         get() = _epgEnable
@@ -459,7 +454,6 @@ class SettingsViewModel : ViewModel() {
         _iptvChannelFavoriteList = Configs.iptvChannelFavoriteList
         _iptvChannelFavoriteChangeBoundaryJumpOut = Configs.iptvChannelFavoriteChangeBoundaryJumpOut
         _iptvChannelGroupHiddenList = Configs.iptvChannelGroupHiddenList
-        _iptvHybridMode = Configs.iptvHybridMode
         _epgEnable = Configs.epgEnable
         _epgSourceCurrent = Configs.epgSourceCurrent
         _epgSourceList = Configs.epgSourceList

@@ -17,11 +17,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yogiczy.mytv.core.data.entities.channel.ChannelGroupList
 import top.yogiczy.mytv.core.data.entities.channel.ChannelGroupList.Companion.channelList
-import top.yogiczy.mytv.core.data.entities.channel.ChannelList
 import top.yogiczy.mytv.core.data.entities.epg.EpgList
 import top.yogiczy.mytv.core.data.repositories.epg.EpgRepository
 import top.yogiczy.mytv.core.data.repositories.iptv.IptvRepository
-import top.yogiczy.mytv.core.data.utils.ChannelUtil
+import top.yogiczy.mytv.core.data.repositories.iptv.WebFallbackRepository
 import top.yogiczy.mytv.core.data.utils.Constants
 import top.yogiczy.mytv.tv.ui.material.Snackbar
 import top.yogiczy.mytv.tv.ui.material.SnackbarType
@@ -44,13 +43,18 @@ class MainViewModel : ViewModel() {
     }
 
     private suspend fun refreshChannel() {
-        // 网页模式：选中"本地(NULL)"或地址为空 → 直接加载网页直播（央视+卫视）
+        // 网页模式：选中"本地(NULL)"或地址为空 → 从云端拉取全国直播列表（iptv 仓库 webview.txt）
         if (Configs.iptvSourceCurrent.url.isBlank()
             || Configs.iptvSourceCurrent.url.equals("NULL", ignoreCase = true)
         ) {
-            _uiState.value = MainUiState.Ready(
-                channelGroupList = ChannelUtil.getHybridFallbackChannelGroupList()
-            )
+            val fallback = runCatching { WebFallbackRepository().fetchChannelGroupList() }.getOrNull()
+            if (fallback != null) {
+                _uiState.value = MainUiState.Ready(channelGroupList = fallback)
+            } else {
+                // 远端获取失败 → 禁止本地内置列表播放，明确报错
+                _uiState.value = MainUiState.Error("全国直播列表获取失败，请检查网络")
+                Snackbar.show("全国直播列表获取失败，已禁止本地播放", type = SnackbarType.ERROR)
+            }
             return
         }
 
@@ -68,60 +72,22 @@ class MainViewModel : ViewModel() {
                 true
             }
             .catch {
-                // 云端直播源不可用 → 兜底启用网页直播（央视+卫视官方页）
-                _uiState.value = MainUiState.Ready(
-                    channelGroupList = ChannelUtil.getHybridFallbackChannelGroupList()
-                )
-                Snackbar.show("云端直播源不可用，已启用网页直播")
+                // 云端直播源不可用 → 兜底启用全国直播（云端列表）；列表也失败则报错，禁止本地播放
+                val fallback = runCatching { WebFallbackRepository().fetchChannelGroupList() }.getOrNull()
+                if (fallback != null) {
+                    _uiState.value = MainUiState.Ready(channelGroupList = fallback)
+                    Snackbar.show("云端直播源不可用，已启用全国直播")
+                } else {
+                    _uiState.value = MainUiState.Error("云端直播源与全国直播列表均获取失败")
+                    Snackbar.show("云端直播源与全国直播列表均获取失败，已禁止本地播放", type = SnackbarType.ERROR)
+                }
             }
-            .map { hybridChannel(it) }
             .map {
                 _uiState.value = MainUiState.Ready(channelGroupList = it)
                 it
             }
             .collect()
     }
-
-    /**
-     * 仅限源名称含"全国"的直播源启用混合模式（WebView 官方页优先），
-     * 其余源保持纯 m3u 播放。
-     * 匹配内置默认源、全国自动更新、全国cs3306 等；组播/单播等不启用。
-     */
-    private suspend fun hybridChannel(channelGroupList: ChannelGroupList) =
-        withContext(Dispatchers.Default) {
-            // 当前直播源名称不含"全国" → 不注入网页地址，保持原样
-            if (!Configs.iptvSourceCurrent.name.contains("全国")) {
-                return@withContext channelGroupList
-            }
-
-            val hybridMode = Configs.iptvHybridMode
-            return@withContext when (hybridMode) {
-                Configs.IptvHybridMode.DISABLE -> channelGroupList
-                Configs.IptvHybridMode.IPTV_FIRST -> {
-                    ChannelGroupList(channelGroupList.map { group ->
-                        group.copy(channelList = ChannelList(group.channelList.map { channel ->
-                            channel.copy(
-                                urlList = channel.urlList.plus(
-                                    ChannelUtil.getHybridWebViewUrl(channel.name) ?: emptyList()
-                                )
-                            )
-                        }))
-                    })
-                }
-
-                Configs.IptvHybridMode.HYBRID_FIRST -> {
-                    ChannelGroupList(channelGroupList.map { group ->
-                        group.copy(channelList = ChannelList(group.channelList.map { channel ->
-                            channel.copy(
-                                urlList = (ChannelUtil.getHybridWebViewUrl(channel.name)
-                                    ?: emptyList())
-                                    .plus(channel.urlList)
-                            )
-                        }))
-                    })
-                }
-            }
-        }
 
     private suspend fun refreshEpg() {
         if (!Configs.epgEnable) return

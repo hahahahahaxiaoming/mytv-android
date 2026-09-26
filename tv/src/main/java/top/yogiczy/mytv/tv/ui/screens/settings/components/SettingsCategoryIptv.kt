@@ -202,25 +202,5 @@ fun SettingsCategoryIptv(
                 )
             }
         }
-
-        item {
-            SettingsListItem(
-                headlineContent = "混合模式",
-                supportingContent = when (settingsViewModel.iptvHybridMode) {
-                    Configs.IptvHybridMode.DISABLE -> ""
-                    Configs.IptvHybridMode.IPTV_FIRST -> "优先尝试播放直播源中线路，若所有直播源线路不可用，则进入混合模式"
-                    Configs.IptvHybridMode.HYBRID_FIRST -> "优先进入混合模式，若混合模式不可用，则播放直播源中线路"
-                },
-                trailingContent = when (settingsViewModel.iptvHybridMode) {
-                    Configs.IptvHybridMode.DISABLE -> "禁用"
-                    Configs.IptvHybridMode.IPTV_FIRST -> "直播源优先"
-                    Configs.IptvHybridMode.HYBRID_FIRST -> "混合优先"
-                },
-                onSelected = {
-                    settingsViewModel.iptvHybridMode =
-                        Configs.IptvHybridMode.entries.let { it[(it.indexOf(settingsViewModel.iptvHybridMode) + 1) % it.size] }
-                },
-            )
-        }
     }
 }

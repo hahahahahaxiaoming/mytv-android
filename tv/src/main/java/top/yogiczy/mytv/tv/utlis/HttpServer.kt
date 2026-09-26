@@ -381,7 +381,7 @@ private data class AllSettings(
     val iptvChannelFavoriteList: Set<String> = emptySet(),
     val iptvChannelFavoriteChangeBoundaryJumpOut: Boolean = false,
     val iptvChannelGroupHiddenList: Set<String> = emptySet(),
-    val iptvHybridMode: Configs.IptvHybridMode = Configs.IptvHybridMode.HYBRID_FIRST,
+    val iptvHybridMode: Configs.IptvHybridMode = Configs.IptvHybridMode.DISABLE,
     val epgEnable: Boolean = false,
     val epgSourceCurrent: EpgSource = EpgSource(),
     val epgSourceList: EpgSourceList = EpgSourceList(),

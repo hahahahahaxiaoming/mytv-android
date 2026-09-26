@@ -13,6 +13,10 @@ object Constants {
     const val IPTV_SOURCE_SETTING_URL =
         "https://gitee.com/giteesnail/iptv/raw/master/iptv.setting"
 
+    /** 远程全国直播列表（iptv 仓库 webview.txt，网页兜底内容源） */
+    const val WEB_FALLBACK_LIST_URL =
+        "https://gitee.com/giteesnail/iptv/raw/master/webview.txt"
+
     /**
      * 应用 标题
      */
@@ -28,12 +32,19 @@ object Constants {
      */
     val IPTV_SOURCE_LIST = IptvSourceList(
         listOf(
-            IptvSource(
-                name = "默认直播源",
-                url = "NULL",
-            ),
+//            IptvSource(
+//                name = "默认直播源",
+//                url = "NULL",
+//            ),
         )
     )
+
+    /**
+     * 全国直播兜底源：本地列表为空/注销 NULL 源时作为当前源，
+     * url=NULL 触发网页模式（从云端 webview.txt 拉取频道）。
+     * 恢复本地 NULL 源后，该逻辑同样生效。
+     */
+    val WEB_FALLBACK_SOURCE = IptvSource(name = "全国直播", url = "NULL")
 
     /**
      * IPTV源缓存时间（毫秒）
