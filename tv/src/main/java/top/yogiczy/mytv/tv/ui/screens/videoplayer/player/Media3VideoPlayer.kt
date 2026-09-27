@@ -22,6 +22,8 @@ import androidx.media3.exoplayer.rtsp.RtspMediaSource
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.util.EventLogger
+import androidx.media3.extractor.DefaultExtractorsFactory
+import androidx.media3.extractor.ts.DefaultTsPayloadReaderFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -59,13 +61,19 @@ class Media3VideoPlayer(
             },
         )
     }
+    private val extractorsFactory by lazy {
+        DefaultExtractorsFactory().setTsExtractorFlags(
+            DefaultTsPayloadReaderFactory.FLAG_DETECT_ACCESS_UNITS or
+                DefaultTsPayloadReaderFactory.FLAG_ALLOW_NON_IDR_KEYFRAMES
+        )
+    }
 
     private val contentTypeAttempts = mutableMapOf<Int, Boolean>()
     private var updatePositionJob: Job? = null
 
     private fun getMediaSource(uri: Uri, contentType: Int? = null): MediaSource? {
         if (uri.toString().startsWith("rtp://")) {
-            return ProgressiveMediaSource.Factory(RtpDataSource.Factory())
+            return ProgressiveMediaSource.Factory(RtpDataSource.Factory(), extractorsFactory)
                 .createMediaSource(MediaItem.fromUri(uri))
         }
 
@@ -81,7 +89,8 @@ class Media3VideoPlayer(
             }
 
             C.CONTENT_TYPE_OTHER -> {
-                ProgressiveMediaSource.Factory(dataSourceFactory).createMediaSource(mediaItem)
+                ProgressiveMediaSource.Factory(dataSourceFactory, extractorsFactory)
+                    .createMediaSource(mediaItem)
             }
 
             else -> {
