@@ -33,8 +33,6 @@ class LibVlcVideoPlayer(
     private var videoSurfaceView: SurfaceView? = null
     private var initialized = false
     private var mediaDuration = 0L
-    private var windowWidth = 0
-    private var windowHeight = 0
 
     private val surfaceLayoutChangeListener =
         View.OnLayoutChangeListener { _, left, top, right, bottom, _, _, _, _ ->
@@ -144,19 +142,12 @@ class LibVlcVideoPlayer(
         if (!initialized) return
         val vlcVout = mediaPlayer.vlcVout
         if (vlcVout.areViewsAttached()) vlcVout.detachViews()
-        windowWidth = 0
-        windowHeight = 0
     }
 
     private fun updateWindowSize(width: Int, height: Int) {
         if (!initialized || width <= 0 || height <= 0) return
-        if (width == windowWidth && height == windowHeight) return
         val vlcVout = mediaPlayer.vlcVout
-        if (vlcVout.areViewsAttached()) {
-            vlcVout.setWindowSize(width, height)
-            windowWidth = width
-            windowHeight = height
-        }
+        if (vlcVout.areViewsAttached()) vlcVout.setWindowSize(width, height)
     }
 
     override fun onNewVideoLayout(
@@ -169,6 +160,7 @@ class LibVlcVideoPlayer(
         sarDen: Int,
     ) {
         if (visibleWidth <= 0 || visibleHeight <= 0) return
+        videoSurfaceView?.let { updateWindowSize(it.width, it.height) }
         val displayWidth =
             if (sarNum > 0 && sarDen > 0) visibleWidth * sarNum / sarDen else visibleWidth
         triggerResolution(displayWidth, visibleHeight)

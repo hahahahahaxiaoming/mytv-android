@@ -19,3 +19,13 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# libVLC 3.x 通过 JNI 按类名和方法名回调 Java。
+# libvlc-all 3.7.0 没有随 AAR 提供 consumer ProGuard 规则，Release 混淆时必须保留。
+-keep class org.videolan.libvlc.** { *; }
+-keep interface org.videolan.libvlc.** { *; }
+
+# 保留项目及依赖中的 native 方法名，避免 JNI 查找失败。
+-keepclasseswithmembernames,includedescriptorclasses class * {
+    native <methods>;
+}
