@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
@@ -29,6 +30,7 @@ fun VideoPlayerMetadata(
     ) {
         Column(
             modifier = modifier
+                .width(240.dp)
                 .background(
                     MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
                     MaterialTheme.shapes.medium,

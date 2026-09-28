@@ -29,6 +29,20 @@ fun SettingsCategoryDebug(
 
         item {
             SettingsListItem(
+                headlineContent = "显示性能监控",
+                supportingContent = "显示CPU、内存、帧率、掉帧及GPU信息",
+                trailingContent = {
+                    Switch(settingsViewModel.debugShowPerformanceMonitor, null)
+                },
+                onSelected = {
+                    settingsViewModel.debugShowPerformanceMonitor =
+                        !settingsViewModel.debugShowPerformanceMonitor
+                },
+            )
+        }
+
+        item {
+            SettingsListItem(
                 headlineContent = "显示播放器信息",
                 supportingContent = "显示播放器详细信息（编码、解码器、采样率等）",
                 trailingContent = {

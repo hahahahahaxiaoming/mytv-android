@@ -3,6 +3,7 @@ package top.yogiczy.mytv.tv.ui.screens.videoplayer
 import android.view.SurfaceView
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -16,13 +17,20 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import top.yogiczy.mytv.tv.ui.screens.videoplayer.player.Media3VideoPlayer
+import top.yogiczy.mytv.tv.ui.screens.videoplayer.player.LibVlcVideoPlayer
 import top.yogiczy.mytv.tv.ui.screens.videoplayer.player.VideoPlayer
+import top.yogiczy.mytv.tv.ui.utils.Configs
 
 @Stable
 class VideoPlayerState(
-    private val instance: VideoPlayer,
+    private var instance: VideoPlayer,
+    private var decodeMode: VideoPlayerDecodeMode,
     private var defaultDisplayModeProvider: () -> VideoPlayerDisplayMode = { VideoPlayerDisplayMode.ORIGINAL },
 ) {
+    private var initialized = false
+    private var currentUrl: String? = null
+    private var videoSurfaceView: SurfaceView? = null
+
     /** 显示模式 */
     var displayMode by mutableStateOf(defaultDisplayModeProvider())
 
@@ -48,6 +56,7 @@ class VideoPlayerState(
     var metadata by mutableStateOf(VideoPlayer.Metadata())
 
     fun prepare(url: String) {
+        currentUrl = url
         error = null
         instance.prepare(url)
     }
@@ -65,10 +74,12 @@ class VideoPlayerState(
     }
 
     fun stop() {
+        currentUrl = null
         instance.stop()
     }
 
     fun setVideoSurfaceView(surfaceView: SurfaceView) {
+        videoSurfaceView = surfaceView
         instance.setVideoSurfaceView(surfaceView)
     }
 
@@ -89,6 +100,11 @@ class VideoPlayerState(
     }
 
     fun initialize() {
+        initialized = true
+        initializeInstance()
+    }
+
+    private fun initializeInstance() {
         instance.initialize()
         instance.onResolution { width, height ->
             if (width > 0 && height > 0) aspectRatio = width.toFloat() / height
@@ -115,25 +131,68 @@ class VideoPlayerState(
         instance.onInterrupt { onInterruptListeners.forEach { it.invoke() } }
     }
 
+    fun switchDecodeMode(
+        newDecodeMode: VideoPlayerDecodeMode,
+        playerFactory: () -> VideoPlayer,
+    ) {
+        if (newDecodeMode == decodeMode) return
+
+        if (initialized) instance.release()
+        instance = playerFactory()
+        decodeMode = newDecodeMode
+        error = null
+        isBuffering = false
+        isPlaying = false
+        duration = 0L
+        currentPosition = 0L
+        metadata = VideoPlayer.Metadata()
+
+        if (initialized) {
+            initializeInstance()
+            videoSurfaceView?.let(instance::setVideoSurfaceView)
+            currentUrl?.let(::prepare)
+        }
+    }
+
     fun release() {
         onReadyListeners.clear()
         onErrorListeners.clear()
+        onInterruptListeners.clear()
         instance.release()
+        initialized = false
     }
 }
 
 @Composable
 fun rememberVideoPlayerState(
     defaultDisplayModeProvider: () -> VideoPlayerDisplayMode = { VideoPlayerDisplayMode.ORIGINAL },
+    decodeModeProvider: () -> VideoPlayerDecodeMode = { Configs.videoPlayerDecodeMode },
 ): VideoPlayerState {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val coroutineScope = rememberCoroutineScope()
+    val decodeMode = decodeModeProvider()
+
+    fun createPlayer(mode: VideoPlayerDecodeMode): VideoPlayer = when (mode) {
+        VideoPlayerDecodeMode.VLC_SOFTWARE ->
+            LibVlcVideoPlayer(context, coroutineScope, hardwareDecode = false)
+
+        VideoPlayerDecodeMode.VLC_HARDWARE ->
+            LibVlcVideoPlayer(context, coroutineScope, hardwareDecode = true)
+
+        else -> Media3VideoPlayer(context, coroutineScope)
+    }
+
     val state = remember {
         VideoPlayerState(
-            Media3VideoPlayer(context, coroutineScope),
+            createPlayer(decodeMode),
+            decodeMode,
             defaultDisplayModeProvider,
         )
+    }
+
+    LaunchedEffect(decodeMode) {
+        state.switchDecodeMode(decodeMode) { createPlayer(decodeMode) }
     }
 
     DisposableEffect(Unit) {

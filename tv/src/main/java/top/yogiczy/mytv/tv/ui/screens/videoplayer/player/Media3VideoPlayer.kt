@@ -18,6 +18,7 @@ import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.exoplayer.hls.HlsMediaSource
+import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.rtsp.RtspMediaSource
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
@@ -28,6 +29,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import top.yogiczy.mytv.tv.ui.screens.videoplayer.VideoPlayerDecodeMode
 import top.yogiczy.mytv.tv.ui.utils.Configs
 
 @OptIn(UnstableApi::class)
@@ -42,6 +44,32 @@ class Media3VideoPlayer(
                     DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER
                 else DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON
             )
+
+        if (Configs.videoPlayerDecodeMode == VideoPlayerDecodeMode.MEDIA3_SOFTWARE ||
+            Configs.videoPlayerDecodeMode == VideoPlayerDecodeMode.MEDIA3_HARDWARE
+        ) {
+            renderersFactory.setMediaCodecSelector { mimeType, requiresSecureDecoder, requiresTunnelingDecoder ->
+                val decoderInfos = MediaCodecSelector.DEFAULT.getDecoderInfos(
+                    mimeType,
+                    requiresSecureDecoder,
+                    requiresTunnelingDecoder,
+                )
+
+                if (mimeType.startsWith("video/")) {
+                    when (Configs.videoPlayerDecodeMode) {
+                        VideoPlayerDecodeMode.MEDIA3_SOFTWARE ->
+                            decoderInfos.filter { it.softwareOnly }
+
+                        VideoPlayerDecodeMode.MEDIA3_HARDWARE ->
+                            decoderInfos.filter { it.hardwareAccelerated }
+
+                        else -> decoderInfos
+                    }
+                } else {
+                    decoderInfos
+                }
+            }
+        }
 
         ExoPlayer
             .Builder(context)

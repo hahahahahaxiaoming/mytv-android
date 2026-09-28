@@ -204,6 +204,7 @@ object HttpServer : Loggable() {
                         appLastLatestVersion = Configs.appLastLatestVersion,
                         appAgreementAgreed = Configs.appAgreementAgreed,
                         debugShowFps = Configs.debugShowFps,
+                        debugShowPerformanceMonitor = Configs.debugShowPerformanceMonitor,
                         debugShowVideoPlayerMetadata = Configs.debugShowVideoPlayerMetadata,
                         debugShowLayoutGrids = Configs.debugShowLayoutGrids,
                         iptvLastChannelIdx = Configs.iptvLastChannelIdx,
@@ -255,6 +256,7 @@ object HttpServer : Loggable() {
         Configs.appLastLatestVersion = configs.appLastLatestVersion
         Configs.appAgreementAgreed = configs.appAgreementAgreed
         Configs.debugShowFps = configs.debugShowFps
+        Configs.debugShowPerformanceMonitor = configs.debugShowPerformanceMonitor
         Configs.debugShowVideoPlayerMetadata = configs.debugShowVideoPlayerMetadata
         Configs.debugShowLayoutGrids = configs.debugShowLayoutGrids
         Configs.iptvLastChannelIdx = configs.iptvLastChannelIdx
@@ -367,6 +369,7 @@ private data class AllSettings(
     val appLastLatestVersion: String = "",
     val appAgreementAgreed: Boolean = false,
     val debugShowFps: Boolean = false,
+    val debugShowPerformanceMonitor: Boolean = false,
     val debugShowVideoPlayerMetadata: Boolean = false,
     val debugShowLayoutGrids: Boolean = false,
     val iptvLastChannelIdx: Int = 0,

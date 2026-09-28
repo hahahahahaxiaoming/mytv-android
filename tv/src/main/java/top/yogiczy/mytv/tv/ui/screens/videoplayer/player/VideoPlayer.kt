@@ -166,6 +166,7 @@ abstract class VideoPlayer(
         companion object {
             val UNSUPPORTED_TYPE = PlaybackException("UNSUPPORTED_TYPE", 10002)
             val LOAD_TIMEOUT = PlaybackException("LOAD_TIMEOUT", 10003)
+            val VLC_PLAYBACK_ERROR = PlaybackException("VLC_PLAYBACK_ERROR", 10004)
         }
     }
 

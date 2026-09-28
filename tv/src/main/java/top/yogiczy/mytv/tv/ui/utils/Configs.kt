@@ -9,6 +9,7 @@ import top.yogiczy.mytv.core.data.entities.iptvsource.IptvSource
 import top.yogiczy.mytv.core.data.entities.iptvsource.IptvSourceList
 import top.yogiczy.mytv.core.data.utils.Constants
 import top.yogiczy.mytv.core.data.utils.SP
+import top.yogiczy.mytv.tv.ui.screens.videoplayer.VideoPlayerDecodeMode
 import top.yogiczy.mytv.tv.ui.screens.videoplayer.VideoPlayerDisplayMode
 
 /**
@@ -29,6 +30,9 @@ object Configs {
         /** ==================== 调式 ==================== */
         /** 显示fps */
         DEBUG_SHOW_FPS,
+
+        /** 显示性能监控 */
+        DEBUG_SHOW_PERFORMANCE_MONITOR,
 
         /** 播放器详细信息 */
         DEBUG_SHOW_VIDEO_PLAYER_METADATA,
@@ -137,6 +141,9 @@ object Configs {
         /** 播放器 显示模式 */
         VIDEO_PLAYER_DISPLAY_MODE,
 
+        /** 播放器 视频解码模式 */
+        VIDEO_PLAYER_DECODE_MODE,
+
         /** 播放器 强制音频软解 */
         VIDEO_PLAYER_FORCE_AUDIO_SOFT_DECODE,
     }
@@ -165,6 +172,11 @@ object Configs {
     var debugShowFps: Boolean
         get() = SP.getBoolean(KEY.DEBUG_SHOW_FPS.name, false)
         set(value) = SP.putBoolean(KEY.DEBUG_SHOW_FPS.name, value)
+
+    /** 显示性能监控 */
+    var debugShowPerformanceMonitor: Boolean
+        get() = SP.getBoolean(KEY.DEBUG_SHOW_PERFORMANCE_MONITOR.name, false)
+        set(value) = SP.putBoolean(KEY.DEBUG_SHOW_PERFORMANCE_MONITOR.name, value)
 
     /** 播放器详细信息 */
     var debugShowVideoPlayerMetadata: Boolean
@@ -361,6 +373,13 @@ object Configs {
             SP.getInt(KEY.VIDEO_PLAYER_DISPLAY_MODE.name, VideoPlayerDisplayMode.ORIGINAL.value)
         )
         set(value) = SP.putInt(KEY.VIDEO_PLAYER_DISPLAY_MODE.name, value.value)
+
+    /** 播放器 视频解码模式 */
+    var videoPlayerDecodeMode: VideoPlayerDecodeMode
+        get() = VideoPlayerDecodeMode.fromValue(
+            SP.getInt(KEY.VIDEO_PLAYER_DECODE_MODE.name, VideoPlayerDecodeMode.DEFAULT.value)
+        )
+        set(value) = SP.putInt(KEY.VIDEO_PLAYER_DECODE_MODE.name, value.value)
 
     /** 播放器 强制音频软解 */
     var videoPlayerForceAudioSoftDecode: Boolean

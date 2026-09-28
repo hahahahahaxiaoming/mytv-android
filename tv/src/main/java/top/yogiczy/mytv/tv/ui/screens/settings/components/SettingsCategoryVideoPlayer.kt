@@ -8,6 +8,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.tv.material3.Switch
 import top.yogiczy.mytv.core.util.utils.humanizeMs
@@ -83,8 +84,42 @@ fun SettingsCategoryVideoPlayer(
         }
 
         item {
+            val popupManager = LocalPopupManager.current
+            val focusRequester = remember { FocusRequester() }
+            var visible by remember { mutableStateOf(false) }
+
+            SettingsListItem(
+                modifier = Modifier.focusRequester(focusRequester),
+                headlineContent = "视频解码模式",
+                supportingContent = "切换后自动重新加载当前频道",
+                trailingContent = settingsViewModel.videoPlayerDecodeMode.label,
+                onSelected = {
+                    popupManager.push(focusRequester, true)
+                    visible = true
+                },
+            )
+
+            SelectDialog(
+                visibleProvider = { visible },
+                onDismissRequest = { visible = false },
+                title = "视频解码模式",
+                currentDataProvider = { settingsViewModel.videoPlayerDecodeMode },
+                dataListProvider = {
+                    top.yogiczy.mytv.tv.ui.screens.videoplayer.VideoPlayerDecodeMode.entries
+                },
+                dataText = { it.label },
+                itemHeight = 64.dp,
+                onDataSelected = {
+                    settingsViewModel.videoPlayerDecodeMode = it
+                    visible = false
+                },
+            )
+        }
+
+        item {
             SettingsListItem(
                 headlineContent = "强制音频软解",
+                supportingContent = "仅对 Media3 播放器生效",
                 trailingContent = {
                     Switch(settingsViewModel.videoPlayerForceAudioSoftDecode, null)
                 },

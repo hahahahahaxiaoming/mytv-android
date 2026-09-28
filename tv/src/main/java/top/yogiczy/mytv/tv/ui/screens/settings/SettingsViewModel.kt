@@ -21,6 +21,7 @@ import top.yogiczy.mytv.core.data.repositories.iptv.IptvSourceSettingRepository
 import top.yogiczy.mytv.core.data.repositories.iptv.IptvSourceProbeRepository
 import top.yogiczy.mytv.core.data.utils.Constants
 import top.yogiczy.mytv.tv.ui.screens.videoplayer.VideoPlayerDisplayMode
+import top.yogiczy.mytv.tv.ui.screens.videoplayer.VideoPlayerDecodeMode
 import top.yogiczy.mytv.tv.ui.utils.Configs
 
 data class IptvSourceCheckProgress(
@@ -152,6 +153,16 @@ class SettingsViewModel : ViewModel() {
         set(value) {
             _debugShowFps = value
             Configs.debugShowFps = value
+        }
+
+    private var _debugShowPerformanceMonitor by mutableStateOf(
+        Configs.debugShowPerformanceMonitor
+    )
+    var debugShowPerformanceMonitor: Boolean
+        get() = _debugShowPerformanceMonitor
+        set(value) {
+            _debugShowPerformanceMonitor = value
+            Configs.debugShowPerformanceMonitor = value
         }
 
     private var _debugShowVideoPlayerMetadata by mutableStateOf(Configs.debugShowVideoPlayerMetadata)
@@ -418,6 +429,14 @@ class SettingsViewModel : ViewModel() {
             Configs.videoPlayerDisplayMode = value
         }
 
+    private var _videoPlayerDecodeMode by mutableStateOf(Configs.videoPlayerDecodeMode)
+    var videoPlayerDecodeMode: VideoPlayerDecodeMode
+        get() = _videoPlayerDecodeMode
+        set(value) {
+            _videoPlayerDecodeMode = value
+            Configs.videoPlayerDecodeMode = value
+        }
+
     private var _videoPlayerForceAudioSoftDecode by mutableStateOf(false)
     var videoPlayerForceAudioSoftDecode: Boolean
         get() = _videoPlayerForceAudioSoftDecode
@@ -440,6 +459,7 @@ class SettingsViewModel : ViewModel() {
         _appLastLatestVersion = Configs.appLastLatestVersion
         _appAgreementAgreed = Configs.appAgreementAgreed
         _debugShowFps = Configs.debugShowFps
+        _debugShowPerformanceMonitor = Configs.debugShowPerformanceMonitor
         _debugShowVideoPlayerMetadata = Configs.debugShowVideoPlayerMetadata
         _debugShowLayoutGrids = Configs.debugShowLayoutGrids
         _iptvLastChannelIdx = Configs.iptvLastChannelIdx
@@ -473,6 +493,7 @@ class SettingsViewModel : ViewModel() {
         _videoPlayerUserAgent = Configs.videoPlayerUserAgent
         _videoPlayerLoadTimeout = Configs.videoPlayerLoadTimeout
         _videoPlayerAspectRatio = Configs.videoPlayerDisplayMode
+        _videoPlayerDecodeMode = Configs.videoPlayerDecodeMode
         _videoPlayerForceAudioSoftDecode = Configs.videoPlayerForceAudioSoftDecode
     }
 }

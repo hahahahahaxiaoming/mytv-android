@@ -3,15 +3,20 @@ package top.yogiczy.mytv.tv.ui.screens.components
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Border
 import androidx.tv.material3.Card
@@ -38,6 +43,7 @@ fun <T> SelectDialog(
     currentDataProvider: () -> T,
     dataListProvider: () -> List<T>,
     dataText: (T) -> String,
+    itemHeight: Dp? = null,
     onDataSelected: (T) -> Unit = {},
     visibleProvider: () -> Boolean = { true },
     onDismissRequest: (() -> Unit)? = null,
@@ -68,6 +74,7 @@ fun <T> SelectDialog(
                             Modifier.focusOnLaunchedSaveable(),
                         ),
                         text = dataText(data),
+                        height = itemHeight,
                         onSelected = { onDataSelected(data) },
                     )
                 }
@@ -80,11 +87,13 @@ fun <T> SelectDialog(
 private fun SelectDialogItem(
     modifier: Modifier = Modifier,
     text: String,
+    height: Dp? = null,
     onSelected: () -> Unit = {},
 ) {
     Card(
         onClick = {},
         modifier = modifier
+            .then(if (height != null) Modifier.height(height) else Modifier)
             .handleKeyEvents(onSelect = onSelected),
         colors = CardDefaults.colors(
             containerColor = MaterialTheme.colors.surfaceContainerHigh,
@@ -100,9 +109,16 @@ private fun SelectDialogItem(
             text = text,
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 6.dp, horizontal = 12.dp),
+            modifier = if (height != null) {
+                Modifier
+                    .fillMaxSize()
+                    .wrapContentHeight(Alignment.CenterVertically)
+                    .padding(horizontal = 12.dp)
+            } else {
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp, horizontal = 12.dp)
+            },
         )
     }
 }

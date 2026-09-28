@@ -59,7 +59,10 @@ fun MainContent(
     val coroutineScope = rememberCoroutineScope()
 
     val videoPlayerState =
-        rememberVideoPlayerState(defaultDisplayModeProvider = { settingsViewModel.videoPlayerDisplayMode })
+        rememberVideoPlayerState(
+            defaultDisplayModeProvider = { settingsViewModel.videoPlayerDisplayMode },
+            decodeModeProvider = { settingsViewModel.videoPlayerDecodeMode },
+        )
     val mainContentState = rememberMainContentState(
         videoPlayerState = videoPlayerState,
         channelGroupListProvider = filteredChannelGroupListProvider,
@@ -137,7 +140,6 @@ fun MainContent(
     ) {
         VideoPlayerScreen(
             state = videoPlayerState,
-            showMetadataProvider = { settingsViewModel.debugShowVideoPlayerMetadata },
         )
 
         Visible({ ChannelUtil.isHybridWebViewUrl(mainContentState.currentChannel.urlList[mainContentState.currentChannelUrlIdx]) }) {
@@ -457,5 +459,16 @@ fun MainContent(
 
     UpdateScreen()
 
-    Visible({ settingsViewModel.debugShowFps }) { MonitorScreen() }
+    Visible({
+        settingsViewModel.debugShowVideoPlayerMetadata ||
+            settingsViewModel.debugShowPerformanceMonitor ||
+            settingsViewModel.debugShowFps
+    }) {
+        MonitorScreen(
+            showFps = settingsViewModel.debugShowFps,
+            showMetadata = settingsViewModel.debugShowVideoPlayerMetadata,
+            showPerformance = settingsViewModel.debugShowPerformanceMonitor,
+            metadataProvider = { videoPlayerState.metadata },
+        )
+    }
 }

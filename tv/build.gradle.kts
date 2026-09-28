@@ -90,6 +90,7 @@ dependencies {
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.exoplayer.hls)
     implementation(libs.androidx.media3.exoplayer.rtsp)
+    implementation(libs.libvlc.all)
 
     // 二维码
     implementation(libs.qrose)
