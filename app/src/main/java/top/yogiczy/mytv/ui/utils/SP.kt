@@ -2,6 +2,8 @@ package top.yogiczy.mytv.ui.utils
 
 import android.content.Context
 import android.content.SharedPreferences
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import top.yogiczy.mytv.data.utils.Constants
 
 /**
@@ -46,11 +48,6 @@ object SP {
 
         /** 直播源精简 */
         IPTV_SOURCE_SIMPLIFY,
-
-        /** 直播源url */
-        IPTV_SOURCE_URL,
-
-        IPTV_INITIAL_SOURCE_SELECTED,
 
         /** 直播源缓存时间（毫秒） */
         IPTV_SOURCE_CACHE_TIME,
@@ -163,16 +160,17 @@ object SP {
         get() = sp.getBoolean(KEY.IPTV_SOURCE_SIMPLIFY.name, false)
         set(value) = sp.edit().putBoolean(KEY.IPTV_SOURCE_SIMPLIFY.name, value).apply()
 
-    /** 直播源 url */
-    var iptvSourceUrl: String
-        get() = (sp.getString(KEY.IPTV_SOURCE_URL.name, "")
-            ?: "").ifBlank { Constants.IPTV_SOURCE_URL }
-        set(value) = sp.edit().putString(KEY.IPTV_SOURCE_URL.name, value).apply()
+    private val _iptvSource = MutableStateFlow(Constants.WEB_IPTV_LIST_URL)
+    val iptvSource = _iptvSource.asStateFlow()
 
-    /** Whether initial cloud source selection has completed. */
-    var iptvInitialSourceSelected: Boolean
-        get() = sp.getBoolean(KEY.IPTV_INITIAL_SOURCE_SELECTED.name, false)
-        set(value) = sp.edit().putBoolean(KEY.IPTV_INITIAL_SOURCE_SELECTED.name, value).apply()
+    /** 当前运行期间使用的直播源。 */
+    var iptvSourceUrl: String
+        get() = _iptvSource.value
+        set(value) {
+            _iptvSource.value = value.trim()
+                .takeUnless { it.isEmpty() || it == Constants.DISABLED_IPTV_SOURCE_URL }
+                ?: Constants.WEB_IPTV_LIST_URL
+        }
 
     /** 直播源缓存时间（毫秒） */
     var iptvSourceCacheTime: Long
@@ -284,7 +282,7 @@ object SP {
     /** 播放器 画面比例 */
     var videoPlayerAspectRatio: VideoPlayerAspectRatio
         get() = VideoPlayerAspectRatio.fromValue(
-            sp.getInt(KEY.VIDEO_PLAYER_ASPECT_RATIO.name, VideoPlayerAspectRatio.ORIGINAL.value)
+            sp.getInt(KEY.VIDEO_PLAYER_ASPECT_RATIO.name, VideoPlayerAspectRatio.SIXTEEN_NINE.value)
         )
         set(value) = sp.edit().putInt(KEY.VIDEO_PLAYER_ASPECT_RATIO.name, value.value).apply()
 
@@ -340,7 +338,7 @@ object SP {
 
         companion object {
             fun fromValue(value: Int): VideoPlayerAspectRatio {
-                return entries.firstOrNull { it.value == value } ?: ORIGINAL
+                return entries.firstOrNull { it.value == value } ?: SIXTEEN_NINE
             }
         }
     }

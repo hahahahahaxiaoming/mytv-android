@@ -96,11 +96,9 @@ class LeanbackSettingsViewModel : ViewModel() {
             SP.iptvSourceCacheTime = value
         }
 
-    private var _iptvSourceUrl by mutableStateOf(SP.iptvSourceUrl)
     var iptvSourceUrl: String
-        get() = _iptvSourceUrl
+        get() = SP.iptvSourceUrl
         set(value) {
-            _iptvSourceUrl = value
             SP.iptvSourceUrl = value
         }
 

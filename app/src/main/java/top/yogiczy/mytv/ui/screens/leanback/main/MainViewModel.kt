@@ -3,14 +3,12 @@ package top.yogiczy.mytv.ui.screens.leanback.main
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.async
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.retry
@@ -18,17 +16,16 @@ import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.launch
 import top.yogiczy.mytv.data.entities.EpgList
 import top.yogiczy.mytv.data.entities.IptvGroupList
-import top.yogiczy.mytv.data.entities.IptvSource
 import top.yogiczy.mytv.data.entities.IptvGroupList.Companion.iptvList
 import top.yogiczy.mytv.data.repositories.epg.EpgRepository
 import top.yogiczy.mytv.data.repositories.iptv.IptvRepository
-import top.yogiczy.mytv.data.repositories.iptv.IptvSourceProbeRepository
-import top.yogiczy.mytv.data.repositories.iptv.IptvSourceSettingRepository
+import top.yogiczy.mytv.data.repositories.iptv.WebIptvRepository
 import top.yogiczy.mytv.data.utils.Constants
 import top.yogiczy.mytv.ui.utils.SP
 
 class LeanbackMainViewModel : ViewModel() {
     private val iptvRepository = IptvRepository()
+    private val webIptvRepository = WebIptvRepository()
     private val epgRepository = EpgRepository()
 
     private val _uiState = MutableStateFlow<LeanbackMainUiState>(LeanbackMainUiState.Loading())
@@ -36,65 +33,31 @@ class LeanbackMainViewModel : ViewModel() {
 
     init {
         viewModelScope.launch {
-            if (!SP.iptvInitialSourceSelected) selectInitialSource()
-            refreshIptv()
-            refreshEpg()
+            SP.iptvSource.collectLatest { sourceUrl ->
+                _uiState.value = LeanbackMainUiState.Loading()
+                refreshIptv(sourceUrl)
+                refreshEpg()
+            }
         }
     }
 
-    private suspend fun selectInitialSource() {
-        _uiState.value = LeanbackMainUiState.SourceChecking(checked = 0, total = 0)
-        val remoteSources = runCatching { IptvSourceSettingRepository().fetch() }
-            .getOrDefault(emptyList())
-        val candidates = remoteSources.distinctBy { it.url }
-        if (candidates.isEmpty()) {
-            SP.iptvSourceUrl = Constants.IPTV_SOURCE_URL
+    private suspend fun refreshIptv(sourceUrl: String) {
+        if (sourceUrl == Constants.WEB_IPTV_LIST_URL) {
+            _uiState.value = LeanbackMainUiState.Loading("正在加载全国直播…")
+            _uiState.value = try {
+                LeanbackMainUiState.Ready(iptvGroupList = webIptvRepository.load())
+            } catch (e: java.io.IOException) {
+                LeanbackMainUiState.Error("全国直播加载失败，请检查网络后重启应用")
+            }
             return
         }
 
-        val probeRepository = IptvSourceProbeRepository(SP.videoPlayerUserAgent)
-        var checked = 0
-        _uiState.value = LeanbackMainUiState.SourceChecking(checked, candidates.size)
-        val batches = candidates.chunked(SOURCE_PROBE_CONCURRENCY)
-        for (batch in batches) {
-            val playable = coroutineScope {
-                val results = Channel<Pair<IptvSource, Boolean>>(Channel.UNLIMITED)
-                val jobs = batch.map { source ->
-                    async {
-                        val result = runCatching { probeRepository.isPlayable(source) }
-                            .getOrDefault(false)
-                        results.send(source to result)
-                    }
-                }
-                repeat(jobs.size) {
-                    val result = results.receive()
-                    checked += 1
-                    _uiState.value = LeanbackMainUiState.SourceChecking(checked, candidates.size)
-                    if (result.second) {
-                        jobs.forEach { it.cancel() }
-                        results.cancel()
-                        return@coroutineScope result.first
-                    }
-                }
-                results.cancel()
-                null
-            }
-            if (playable != null) {
-                SP.iptvSourceUrl = playable.url
-                SP.iptvSourceUrlHistoryList += playable.url
-                SP.iptvInitialSourceSelected = true
-                return
-            }
-        }
-        SP.iptvSourceUrl = Constants.IPTV_SOURCE_URL
-        SP.iptvInitialSourceSelected = true
-    }
-
-    private suspend fun refreshIptv() {
+        // 自定义源共享一个缓存文件，每次切源先清除前一份列表。
+        iptvRepository.clearCache()
         flow {
             emit(
                 iptvRepository.getIptvGroupList(
-                    sourceUrl = SP.iptvSourceUrl,
+                    sourceUrl = sourceUrl,
                     cacheTime = SP.iptvSourceCacheTime,
                     simplify = SP.iptvSourceSimplify,
                 )
@@ -110,11 +73,11 @@ class LeanbackMainViewModel : ViewModel() {
             }
             .catch {
                 _uiState.value = LeanbackMainUiState.Error(it.message)
-                SP.iptvSourceUrlHistoryList -= SP.iptvSourceUrl
+                SP.iptvSourceUrlHistoryList -= sourceUrl
             }
             .map {
                 _uiState.value = LeanbackMainUiState.Ready(iptvGroupList = it)
-                SP.iptvSourceUrlHistoryList += SP.iptvSourceUrl
+                SP.iptvSourceUrlHistoryList += sourceUrl
                 it
             }
             .collect()
@@ -146,14 +109,9 @@ class LeanbackMainViewModel : ViewModel() {
                 .collect()
         }
     }
-
-    private companion object {
-        const val SOURCE_PROBE_CONCURRENCY = 8
-    }
 }
 
 sealed interface LeanbackMainUiState {
-    data class SourceChecking(val checked: Int, val total: Int) : LeanbackMainUiState
     data class Loading(val message: String? = null) : LeanbackMainUiState
     data class Error(val message: String? = null) : LeanbackMainUiState
     data class Ready(

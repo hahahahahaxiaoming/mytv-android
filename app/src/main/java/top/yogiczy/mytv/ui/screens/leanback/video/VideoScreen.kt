@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -23,18 +24,24 @@ fun LeanbackVideoScreen(
     val childPadding = rememberLeanbackChildPadding()
 
     Box(modifier = modifier.fillMaxSize()) {
-        AndroidView(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .aspectRatio(state.aspectRatio),
-            factory = {
-                // PlayerView 切换视频时黑屏闪烁，使用 SurfaceView 代替
-                SurfaceView(context)
-            },
-            update = { surfaceView ->
-                state.setVideoSurfaceView(surfaceView)
-            },
-        )
+        val videoModifier = Modifier.align(Alignment.Center).aspectRatio(state.aspectRatio)
+        val webPlayback = state.webPlayback
+        if (webPlayback != null) {
+            key(webPlayback) {
+                WebVideoScreen(videoModifier, webPlayback, state)
+            }
+        } else {
+            AndroidView(
+                modifier = videoModifier,
+                factory = {
+                    // PlayerView 切换视频时黑屏闪烁，使用 SurfaceView 代替
+                    SurfaceView(context)
+                },
+                update = { surfaceView ->
+                    state.setVideoSurfaceView(surfaceView)
+                },
+            )
+        }
 
         LeanbackVideoPlayerErrorScreen(
             errorProvider = { state.error },

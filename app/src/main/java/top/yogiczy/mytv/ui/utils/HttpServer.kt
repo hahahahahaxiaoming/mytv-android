@@ -17,7 +17,6 @@ import kotlinx.serialization.json.Json
 import top.yogiczy.mytv.AppGlobal
 import top.yogiczy.mytv.R
 import top.yogiczy.mytv.data.repositories.epg.EpgRepository
-import top.yogiczy.mytv.data.repositories.iptv.IptvRepository
 import top.yogiczy.mytv.data.utils.Constants
 import top.yogiczy.mytv.utils.ApkInstaller
 import top.yogiczy.mytv.utils.Loggable
@@ -29,6 +28,16 @@ import java.net.SocketException
 
 object HttpServer : Loggable() {
     private const val SERVER_PORT = 10481
+
+    private val managedSourceUrl = Regex(
+        listOf(
+            Constants.GITEE_IPTV_BASE_URL,
+            Constants.GITCODE_IPTV_BASE_URL,
+            "https://raw.giteeusercontent.com/giteesnail/iptv/",
+            "https://gitcode.com/gitsnail/tvtv/raw/",
+        ).joinToString("|", prefix = "(?:", postfix = """)[^\s"'<>]*""") { Regex.escape(it) },
+        RegexOption.IGNORE_CASE,
+    )
 
     private val uploadedApkFile = File(AppGlobal.cacheDir, "uploaded_apk.apk").apply {
         deleteOnExit()
@@ -104,15 +113,21 @@ object HttpServer : Loggable() {
     private fun handleGetSettings(response: AsyncHttpServerResponse) {
         wrapResponse(response).apply {
             setContentType("application/json")
+            headers.set("Cache-Control", "no-store")
             send(
                 Json.encodeToString(
                     AllSettings(
                         appTitle = Constants.APP_TITLE,
                         appRepo = Constants.APP_REPO,
-                        iptvSourceUrl = SP.iptvSourceUrl,
+                        iptvSourceUrl = SP.iptvSourceUrl.takeUnless(managedSourceUrl::matches).orEmpty(),
                         epgXmlUrl = SP.epgXmlUrl,
                         videoPlayerUserAgent = SP.videoPlayerUserAgent,
-                        logHistory = Logger.history,
+                        logHistory = Logger.history.map { item ->
+                            item.copy(
+                                message = managedSourceUrl.replace(item.message, "内置直播源"),
+                                cause = item.cause?.let { managedSourceUrl.replace(it, "内置直播源") },
+                            )
+                        },
                     )
                 )
             )
@@ -124,21 +139,15 @@ object HttpServer : Loggable() {
         response: AsyncHttpServerResponse,
     ) {
         val body = request.getBody<JSONObjectBody>().get()
-        val iptvSourceUrl = body.get("iptvSourceUrl").toString()
-        val epgXmlUrl = body.get("epgXmlUrl").toString()
-        val videoPlayerUserAgent = body.get("videoPlayerUserAgent").toString()
-
-        if (SP.iptvSourceUrl != iptvSourceUrl) {
-            SP.iptvSourceUrl = iptvSourceUrl
-            IptvRepository().clearCache()
+        (body.opt("epgXmlUrl") as? String)?.let { epgXmlUrl ->
+            if (SP.epgXmlUrl != epgXmlUrl) {
+                SP.epgXmlUrl = epgXmlUrl
+                EpgRepository().clearCache()
+            }
         }
 
-        if (SP.epgXmlUrl != epgXmlUrl) {
-            SP.epgXmlUrl = epgXmlUrl
-            EpgRepository().clearCache()
-        }
-
-        SP.videoPlayerUserAgent = videoPlayerUserAgent
+        (body.opt("videoPlayerUserAgent") as? String)?.let { SP.videoPlayerUserAgent = it }
+        (body.opt("iptvSourceUrl") as? String)?.let { SP.iptvSourceUrl = it }
 
         wrapResponse(response).send("success")
     }

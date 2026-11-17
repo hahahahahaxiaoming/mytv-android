@@ -11,6 +11,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,8 +27,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.tv.foundation.lazy.list.TvLazyColumn
-import androidx.tv.foundation.lazy.list.TvLazyListState
 import androidx.tv.foundation.lazy.list.items
+import androidx.tv.foundation.lazy.list.rememberTvLazyListState
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -43,7 +44,6 @@ import top.yogiczy.mytv.ui.utils.HttpServer
 import top.yogiczy.mytv.ui.utils.SP
 import top.yogiczy.mytv.ui.utils.handleLeanbackKeyEvents
 import top.yogiczy.mytv.utils.humanizeMs
-import kotlin.math.max
 
 @Composable
 fun LeanbackSettingsCategoryIptv(
@@ -51,6 +51,7 @@ fun LeanbackSettingsCategoryIptv(
     settingsViewModel: LeanbackSettingsViewModel = viewModel(),
 ) {
     val coroutineScope = rememberCoroutineScope()
+    val currentSource by SP.iptvSource.collectAsState()
 
     TvLazyColumn(
         modifier = modifier,
@@ -125,7 +126,7 @@ fun LeanbackSettingsCategoryIptv(
 
             LeanbackSettingsCategoryListItem(
                 headlineContent = "自定义直播源",
-                trailingContent = if (settingsViewModel.iptvSourceUrl != Constants.IPTV_SOURCE_URL) "已启用" else "未启用",
+                trailingContent = if (currentSource == Constants.WEB_IPTV_LIST_URL) Constants.WEB_IPTV_NAME else "已启用",
                 onSelected = { showDialog = true },
                 remoteConfig = true,
             )
@@ -134,17 +135,12 @@ fun LeanbackSettingsCategoryIptv(
                 onDismissRequest = { showDialog = false },
                 remoteSourceProvider = { settingsViewModel.iptvRemoteSourceList },
                 iptvSourceHistoryProvider = {
-                    settingsViewModel.iptvSourceUrlHistoryList.filter {
-                        it != Constants.IPTV_SOURCE_URL
-                    }.toImmutableList()
+                    settingsViewModel.iptvSourceUrlHistoryList.toImmutableList()
                 },
-                currentIptvSourceProvider = { settingsViewModel.iptvSourceUrl },
+                currentIptvSourceProvider = { currentSource },
                 onSelected = {
                     showDialog = false
-                    if (settingsViewModel.iptvSourceUrl != it) {
-                        settingsViewModel.iptvSourceUrl = it
-                        coroutineScope.launch { IptvRepository().clearCache() }
-                    }
+                    settingsViewModel.iptvSourceUrl = it
                 },
                 onDeleted = {
                     settingsViewModel.iptvSourceUrlHistoryList -= it
@@ -172,17 +168,17 @@ private fun LeanbackSettingsIptvSourceHistoryDialog(
     onDismissRequest: () -> Unit = {},
     remoteSourceProvider: () -> List<IptvSource> = { emptyList() },
     iptvSourceHistoryProvider: () -> ImmutableList<String> = { persistentListOf() },
-    currentIptvSourceProvider: () -> String = { Constants.IPTV_SOURCE_URL },
+    currentIptvSourceProvider: () -> String = { Constants.WEB_IPTV_LIST_URL },
     onSelected: (String) -> Unit = {},
     onDeleted: (String) -> Unit = {},
 ) {
     val remoteSources = remoteSourceProvider()
     val remoteLabels = remoteSources.associate { it.url to it.name }
     val iptvSourceHistory = (
-        remoteSources.map { it.url } +
-            listOf(Constants.IPTV_SOURCE_URL) +
-            iptvSourceHistoryProvider()
-        ).distinct()
+        remoteSources.map { it.url } + iptvSourceHistoryProvider()
+        ).filterNot {
+            it == Constants.DISABLED_IPTV_SOURCE_URL || it == Constants.WEB_IPTV_LIST_URL
+        }.distinct() + Constants.WEB_IPTV_LIST_URL
     val currentIptvSource = currentIptvSourceProvider()
 
     if (showDialogProvider()) {
@@ -196,62 +192,12 @@ private fun LeanbackSettingsIptvSourceHistoryDialog(
                 var hasFocused by remember { mutableStateOf(false) }
 
                 TvLazyColumn(
-                    state = TvLazyListState(
-                        max(0, iptvSourceHistory.indexOf(currentIptvSource) - 2),
+                    state = rememberTvLazyListState(
+                        initialFirstVisibleItemIndex = (iptvSourceHistory.lastIndex - 2).coerceAtLeast(0),
                     ),
                     contentPadding = PaddingValues(vertical = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(iptvSourceHistory) { source ->
-                        val focusRequester = remember { FocusRequester() }
-                        var isFocused by remember { mutableStateOf(false) }
-
-                        LaunchedEffect(Unit) {
-                            if (source == currentIptvSource && !hasFocused) {
-                                hasFocused = true
-                                focusRequester.requestFocus()
-                            }
-                        }
-
-                        androidx.tv.material3.ListItem(
-                            modifier = Modifier
-                                .focusRequester(focusRequester)
-                                .onFocusChanged { isFocused = it.isFocused || it.hasFocus }
-                                .handleLeanbackKeyEvents(
-                                    onSelect = {
-                                        if (isFocused) onSelected(source)
-                                        else focusRequester.requestFocus()
-                                    },
-                                    onLongSelect = {
-                                        if (isFocused) onDeleted(source)
-                                        else focusRequester.requestFocus()
-                                    },
-                                ),
-                            selected = currentIptvSource == source,
-                            onClick = { },
-                            headlineContent = {
-                                androidx.tv.material3.Text(
-                                    text = when {
-                                        source in remoteLabels -> "远程 · ${remoteLabels.getValue(source)}"
-                                        source == Constants.IPTV_SOURCE_URL ->
-                                            "本地 · 默认直播源 全国（IPV4/IPV6）"
-                                        else -> "历史 · $source"
-                                    },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    maxLines = if (isFocused) Int.MAX_VALUE else 2,
-                                )
-                            },
-                            trailingContent = {
-                                if (currentIptvSource == source) {
-                                    androidx.tv.material3.Icon(
-                                        Icons.Default.CheckCircle,
-                                        contentDescription = "checked",
-                                    )
-                                }
-                            },
-                        )
-                    }
-
                     item {
                         val focusRequester = remember { FocusRequester() }
                         var isFocused by remember { mutableStateOf(false) }
@@ -279,6 +225,55 @@ private fun LeanbackSettingsIptvSourceHistoryDialog(
                             description = "扫码前往设置页面",
                             showDialogProvider = { showDialog },
                             onDismissRequest = { showDialog = false },
+                        )
+                    }
+
+                    items(iptvSourceHistory, key = { it }) { source ->
+                        val focusRequester = remember { FocusRequester() }
+                        var isFocused by remember { mutableStateOf(false) }
+
+                        LaunchedEffect(Unit) {
+                            if (source == Constants.WEB_IPTV_LIST_URL && !hasFocused) {
+                                hasFocused = true
+                                focusRequester.requestFocus()
+                            }
+                        }
+
+                        androidx.tv.material3.ListItem(
+                            modifier = Modifier
+                                .focusRequester(focusRequester)
+                                .onFocusChanged { isFocused = it.isFocused || it.hasFocus }
+                                .handleLeanbackKeyEvents(
+                                    onSelect = {
+                                        if (isFocused) onSelected(source)
+                                        else focusRequester.requestFocus()
+                                    },
+                                    onLongSelect = {
+                                        if (isFocused) onDeleted(source)
+                                        else focusRequester.requestFocus()
+                                    },
+                                ),
+                            selected = currentIptvSource == source,
+                            onClick = { },
+                            headlineContent = {
+                                androidx.tv.material3.Text(
+                                    text = when {
+                                        source == Constants.WEB_IPTV_LIST_URL -> Constants.WEB_IPTV_NAME
+                                        source in remoteLabels -> remoteLabels.getValue(source)
+                                        else -> "历史 · $source"
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    maxLines = if (isFocused) Int.MAX_VALUE else 2,
+                                )
+                            },
+                            trailingContent = {
+                                if (currentIptvSource == source) {
+                                    androidx.tv.material3.Icon(
+                                        Icons.Default.CheckCircle,
+                                        contentDescription = "checked",
+                                    )
+                                }
+                            },
                         )
                     }
                 }

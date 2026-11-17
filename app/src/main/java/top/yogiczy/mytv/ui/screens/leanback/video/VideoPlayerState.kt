@@ -14,6 +14,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import top.yogiczy.mytv.data.utils.Constants
 import top.yogiczy.mytv.ui.screens.leanback.video.player.LeanbackMedia3VideoPlayer
 import top.yogiczy.mytv.ui.screens.leanback.video.player.LeanbackVideoPlayer
 
@@ -34,13 +35,39 @@ class LeanbackVideoPlayerState(
     /** 元数据 */
     var metadata by mutableStateOf(LeanbackVideoPlayer.Metadata())
 
+    internal class WebPlayback(val url: String)
+
+    internal var webPlayback by mutableStateOf<WebPlayback?>(null)
+        private set
+
     fun prepare(url: String) {
         error = null
-        instance.prepare(url)
+        if (url.startsWith(Constants.WEB_IPTV_URL_PREFIX)) {
+            instance.pause()
+            metadata = LeanbackVideoPlayer.Metadata()
+            aspectRatio = defaultAspectRatioProvider() ?: 16f / 9f
+            webPlayback = WebPlayback(url.removePrefix(Constants.WEB_IPTV_URL_PREFIX))
+        } else {
+            webPlayback = null
+            instance.prepare(url)
+        }
     }
 
     fun play() {
-        instance.play()
+        if (webPlayback == null) instance.play()
+    }
+
+    internal fun onWebReady(playback: WebPlayback, width: Int, height: Int) {
+        if (webPlayback !== playback || error != null) return
+        aspectRatio = defaultAspectRatioProvider() ?: width.toFloat() / height
+        metadata = metadata.copy(videoWidth = width, videoHeight = height)
+        onReadyListeners.forEach { it() }
+    }
+
+    internal fun onWebError(playback: WebPlayback, message: String) {
+        if (webPlayback !== playback || error != null) return
+        error = message
+        onErrorListeners.forEach { it() }
     }
 
     fun pause() {
@@ -70,6 +97,7 @@ class LeanbackVideoPlayerState(
     fun initialize() {
         instance.initialize()
         instance.onResolution { width, height ->
+            if (webPlayback != null) return@onResolution
             val defaultAspectRatio = defaultAspectRatioProvider()
 
             if (defaultAspectRatio == null) {
@@ -79,17 +107,18 @@ class LeanbackVideoPlayerState(
             }
         }
         instance.onError { ex ->
+            if (webPlayback != null) return@onError
             error = if (ex != null) "${ex.errorCodeName}(${ex.errorCode})"
             else null
 
             if (error != null) onErrorListeners.forEach { it.invoke() }
 
         }
-        instance.onReady { onReadyListeners.forEach { it.invoke() } }
-        instance.onBuffering { if (it) error = null }
+        instance.onReady { if (webPlayback == null) onReadyListeners.forEach { it.invoke() } }
+        instance.onBuffering { if (webPlayback == null && it) error = null }
         instance.onPrepared { }
-        instance.onMetadata { metadata = it }
-        instance.onCutoff { onCutoffListeners.forEach { it.invoke() } }
+        instance.onMetadata { if (webPlayback == null) metadata = it }
+        instance.onCutoff { if (webPlayback == null) onCutoffListeners.forEach { it.invoke() } }
     }
 
     fun release() {

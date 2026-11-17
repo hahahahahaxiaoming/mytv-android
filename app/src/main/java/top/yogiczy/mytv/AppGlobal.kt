@@ -10,4 +10,6 @@ object AppGlobal {
      * 缓存目录
      */
     lateinit var cacheDir: File
+
+    lateinit var filesDir: File
 }

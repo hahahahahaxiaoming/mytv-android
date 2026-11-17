@@ -9,6 +9,7 @@ class MyTVApplication : Application() {
 
         UnsafeTrustManager.enableUnsafeTrustManager()
         AppGlobal.cacheDir = applicationContext.cacheDir
+        AppGlobal.filesDir = applicationContext.filesDir
         SP.init(applicationContext)
     }
 }

@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -51,17 +52,14 @@ fun LeanbackMainScreen(
     val uiState by mainViewModel.uiState.collectAsState()
 
     when (val s = uiState) {
-        is LeanbackMainUiState.SourceChecking -> LeanbackStartupSourceCheckScreen(
-            checked = s.checked,
-            total = s.total,
-        )
-
-        is LeanbackMainUiState.Ready -> LeanbackMainContent(
-            modifier = modifier,
-            iptvGroupList = s.iptvGroupList,
-            epgList = s.epgList,
-            onBackPressed = onBackPressed,
-        )
+        is LeanbackMainUiState.Ready -> key(s.iptvGroupList) {
+            LeanbackMainContent(
+                modifier = modifier,
+                iptvGroupList = s.iptvGroupList,
+                epgList = s.epgList,
+                onBackPressed = onBackPressed,
+            )
+        }
 
         is LeanbackMainUiState.Loading -> LeanbackMainSettingsHandle(onBackPressed = onBackPressed) {
             LeanbackMainScreenLoading { s.message }

@@ -33,6 +33,7 @@ import androidx.tv.foundation.lazy.list.rememberTvLazyListState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okio.IOException
@@ -169,12 +170,6 @@ private fun LeanbackQuickPanelIptvChannelItem(
                 }
             }
         },
-        supportingContent = {
-            androidx.tv.material3.Text(
-                text = url,
-                maxLines = 1,
-            )
-        },
         trailingContent = {
             if (isSelected) {
                 androidx.tv.material3.Icon(
@@ -188,13 +183,14 @@ private fun LeanbackQuickPanelIptvChannelItem(
 
 @Composable
 private fun rememberIptvUrlDelay(url: String): Long {
-    var elapsedTime by remember { mutableLongStateOf(0) }
-    var hasError by remember { mutableStateOf(false) }
+    var elapsedTime by remember(url) { mutableLongStateOf(0) }
+    var hasError by remember(url) { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(url) {
+        val httpUrl = url.toHttpUrlOrNull() ?: return@LaunchedEffect
         withContext(Dispatchers.IO) {
             val client = OkHttpClient()
-            val request = Request.Builder().url(url).build()
+            val request = Request.Builder().url(httpUrl).build()
 
             elapsedTime = measureTimeMillis {
                 try {

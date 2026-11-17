@@ -14,13 +14,16 @@ object Constants {
      */
     const val APP_REPO = "https://github.com/hahahahahaxiaoming/mytv-android"
 
-    const val IPTV_SOURCE_SETTING_URL =
-        "https://gitee.com/giteesnail/iptv/raw/master/iptv.setting"
+    const val GITEE_IPTV_BASE_URL = "https://gitee.com/giteesnail/iptv/raw/master/"
+    const val GITCODE_IPTV_BASE_URL = "https://api.gitcode.com/api/v5/repos/gitsnail/tvtv/raw/"
+    const val WEB_IPTV_LIST_URL = "${GITEE_IPTV_BASE_URL}webview.txt"
+    const val WEB_IPTV_URL_PREFIX = "hybrid-webview://"
+    const val WEB_IPTV_NAME = "全国直播"
 
-    /**
-     * IPTV源地址
-     */
-    const val IPTV_SOURCE_URL = "https://tv.ando.eu.org/list/HunanTV.m3u"
+    const val IPTV_SOURCE_SETTING_URL = "${GITEE_IPTV_BASE_URL}iptv.setting"
+
+    /** 已停用的内置源地址，用于识别旧配置。 */
+    const val DISABLED_IPTV_SOURCE_URL = "https://tv.ando.eu.org/list/HunanTV.m3u"
 
     /**
      * IPTV源缓存时间（毫秒）

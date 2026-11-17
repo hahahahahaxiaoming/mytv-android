@@ -1,5 +1,6 @@
 package top.yogiczy.mytv.ui.screens.leanback.main.components
 
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -82,12 +83,10 @@ class LeanbackMainContentState(
         }
 
         videoPlayerState.onError {
+            SP.iptvPlayableHostList -= getUrlHost(_currentIptv.urlList[_currentIptvUrlIdx])
             if (_currentIptvUrlIdx < _currentIptv.urlList.size - 1) {
                 changeCurrentIptv(_currentIptv, _currentIptvUrlIdx + 1)
             }
-
-            // 从记忆中删除不可播放的域名
-            SP.iptvPlayableHostList -= getUrlHost(_currentIptv.urlList[_currentIptvUrlIdx])
         }
 
         videoPlayerState.onCutoff {
@@ -161,5 +160,5 @@ fun rememberLeanbackMainContentState(
 }
 
 private fun getUrlHost(url: String): String {
-    return url.split("://").getOrElse(1) { "" }.split("/").firstOrNull() ?: url
+    return Uri.parse(url.removePrefix(Constants.WEB_IPTV_URL_PREFIX)).host.orEmpty()
 }

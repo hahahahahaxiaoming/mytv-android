@@ -1,15 +1,17 @@
 package top.yogiczy.mytv.data.repositories.iptv
 
+import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
-import okhttp3.Request
 import top.yogiczy.mytv.data.entities.Iptv
 import top.yogiczy.mytv.data.entities.IptvGroup
 import top.yogiczy.mytv.data.entities.IptvGroupList
 import top.yogiczy.mytv.data.entities.IptvList
 import top.yogiczy.mytv.data.repositories.FileCacheRepository
 import top.yogiczy.mytv.data.repositories.iptv.parser.IptvParser
+import top.yogiczy.mytv.data.utils.Constants
 import top.yogiczy.mytv.utils.Logger
 
 /**
@@ -17,6 +19,8 @@ import top.yogiczy.mytv.utils.Logger
  */
 class IptvRepository : FileCacheRepository("iptv.txt") {
     private val log = Logger.create(javaClass.simpleName)
+    private val client = OkHttpClient()
+    private val mirrorClient = client.newBuilder().callTimeout(5, TimeUnit.SECONDS).build()
 
     /**
      * 获取远程直播源数据
@@ -24,17 +28,14 @@ class IptvRepository : FileCacheRepository("iptv.txt") {
     private suspend fun fetchSource(sourceUrl: String) = withContext(Dispatchers.IO) {
         log.d("获取远程直播源: $sourceUrl")
 
-        val client = OkHttpClient()
-        val request = Request.Builder().url(sourceUrl).build()
+        val downloadClient = if (sourceUrl.startsWith(Constants.GITEE_IPTV_BASE_URL) ||
+            sourceUrl.startsWith(Constants.GITCODE_IPTV_BASE_URL)
+        ) mirrorClient else client
 
         try {
-            with(client.newCall(request).execute()) {
-                if (!isSuccessful) {
-                    throw Exception("获取远程直播源失败: $code")
-                }
-
-                return@with body!!.string()
-            }
+            downloadClient.readIptvFile(sourceUrl) { it }
+        } catch (ex: CancellationException) {
+            throw ex
         } catch (ex: Exception) {
             log.e("获取远程直播源失败", ex)
             throw Exception("获取远程直播源失败，请检查网络连接", ex)
@@ -78,6 +79,8 @@ class IptvRepository : FileCacheRepository("iptv.txt") {
             }
 
             return groupList
+        } catch (ex: CancellationException) {
+            throw ex
         } catch (ex: Exception) {
             log.e("获取直播源失败", ex)
             throw Exception(ex)
