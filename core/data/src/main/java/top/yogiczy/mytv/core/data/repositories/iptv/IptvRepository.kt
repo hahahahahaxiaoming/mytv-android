@@ -1,14 +1,11 @@
 package top.yogiczy.mytv.core.data.repositories.iptv
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
+import kotlinx.coroutines.CancellationException
 import top.yogiczy.mytv.core.data.entities.channel.ChannelGroupList
 import top.yogiczy.mytv.core.data.entities.iptvsource.IptvSource
-import top.yogiczy.mytv.core.data.network.await
 import top.yogiczy.mytv.core.data.repositories.FileCacheRepository
 import top.yogiczy.mytv.core.data.repositories.iptv.parser.IptvParser
+import top.yogiczy.mytv.core.data.utils.Constants
 import top.yogiczy.mytv.core.data.utils.Logger
 
 /**
@@ -29,17 +26,14 @@ class IptvRepository(
     private suspend fun fetchSource(sourceUrl: String): String {
         log.d("获取远程直播源: $source")
 
-        val client = OkHttpClient()
-        val request = Request.Builder().url(sourceUrl).build()
+        val client = if (sourceUrl.startsWith(Constants.GITEE_IPTV_BASE_URL) ||
+            sourceUrl.startsWith(Constants.GITCODE_IPTV_BASE_URL)
+        ) mirrorIptvClient else iptvClient
 
         try {
-            val response = client.newCall(request).await()
-
-            if (!response.isSuccessful) throw Exception("${response.code}: ${response.message}")
-
-            return withContext(Dispatchers.IO) {
-                response.body?.string() ?: ""
-            }
+            return client.readIptvFile(sourceUrl) { it }
+        } catch (ex: CancellationException) {
+            throw ex
         } catch (ex: Exception) {
             log.e("获取直播源失败", ex)
             throw Exception("获取直播源失败，请检查网络连接", ex)
@@ -68,6 +62,8 @@ class IptvRepository(
             )
 
             return groupList
+        } catch (ex: CancellationException) {
+            throw ex
         } catch (ex: Exception) {
             log.e("获取直播源失败", ex)
             throw Exception(ex)

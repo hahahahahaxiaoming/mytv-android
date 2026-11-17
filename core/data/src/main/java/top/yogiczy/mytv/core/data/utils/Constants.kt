@@ -9,13 +9,16 @@ import top.yogiczy.mytv.core.data.entities.iptvsource.IptvSourceList
  * 常量
  */
 object Constants {
+    internal const val GITEE_IPTV_BASE_URL = "https://gitee.com/giteesnail/iptv/raw/master/"
+    internal const val GITCODE_IPTV_BASE_URL = "https://api.gitcode.com/api/v5/repos/gitsnail/tvtv/raw/"
+
     /** 远程IPTV直播源配置 */
     const val IPTV_SOURCE_SETTING_URL =
-        "https://gitee.com/giteesnail/iptv/raw/master/iptv.setting"
+        "${GITEE_IPTV_BASE_URL}iptv.setting"
 
     /** 远程全国直播列表（iptv 仓库 webview.txt，网页兜底内容源） */
     const val WEB_FALLBACK_LIST_URL =
-        "https://gitee.com/giteesnail/iptv/raw/master/webview.txt"
+        "${GITEE_IPTV_BASE_URL}webview.txt"
 
     /**
      * 应用 标题

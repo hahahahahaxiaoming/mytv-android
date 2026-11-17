@@ -1,28 +1,19 @@
 package top.yogiczy.mytv.core.data.repositories.iptv
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import java.io.IOException
 import okhttp3.OkHttpClient
-import okhttp3.Request
 import top.yogiczy.mytv.core.data.entities.iptvsource.IptvSource
 import top.yogiczy.mytv.core.data.entities.iptvsource.IptvSourceList
-import top.yogiczy.mytv.core.data.network.await
 import top.yogiczy.mytv.core.data.utils.Constants
 
 /** 获取并解析远程直播源设置。 */
-class IptvSourceSettingRepository {
-    suspend fun fetch(): IptvSourceList {
-        val request = Request.Builder().url(Constants.IPTV_SOURCE_SETTING_URL).build()
-        val response = OkHttpClient().newCall(request).await()
-
-        response.use {
-            if (!it.isSuccessful) throw Exception("${it.code}: ${it.message}")
-            val data = withContext(Dispatchers.IO) { it.body?.string().orEmpty() }
-            return parse(data).also { sources ->
-                if (sources.isEmpty()) throw Exception("远程直播源配置为空或格式不正确")
+class IptvSourceSettingRepository(private val client: OkHttpClient = mirrorIptvClient) {
+    suspend fun fetch(): IptvSourceList =
+        client.readIptvFile(Constants.IPTV_SOURCE_SETTING_URL) { data ->
+            parse(data).also { sources ->
+                if (sources.isEmpty()) throw IOException("远程直播源配置为空或格式不正确")
             }
         }
-    }
 
     companion object {
         private val sourceBlockRegex = Regex("IptvSource\\s*\\((.*?)\\)", RegexOption.DOT_MATCHES_ALL)

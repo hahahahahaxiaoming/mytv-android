@@ -1,14 +1,11 @@
 package top.yogiczy.mytv.core.data.repositories.iptv
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import java.io.IOException
 import okhttp3.OkHttpClient
-import okhttp3.Request
 import top.yogiczy.mytv.core.data.entities.channel.Channel
 import top.yogiczy.mytv.core.data.entities.channel.ChannelGroup
 import top.yogiczy.mytv.core.data.entities.channel.ChannelGroupList
 import top.yogiczy.mytv.core.data.entities.channel.ChannelList
-import top.yogiczy.mytv.core.data.network.await
 import top.yogiczy.mytv.core.data.utils.ChannelUtil
 import top.yogiczy.mytv.core.data.utils.Constants
 
@@ -16,17 +13,9 @@ import top.yogiczy.mytv.core.data.utils.Constants
  * 云端全国直播列表（iptv 仓库 webview.txt）获取与解析。
  * 实时拉取、不做本地缓存：获取失败即抛错，由调用方决定兜底（禁止本地内置列表播放）。
  */
-class WebFallbackRepository {
-    suspend fun fetchChannelGroupList(): ChannelGroupList {
-        val request = Request.Builder().url(Constants.WEB_FALLBACK_LIST_URL).build()
-        val response = OkHttpClient().newCall(request).await()
-
-        response.use {
-            if (!it.isSuccessful) throw Exception("${it.code}: ${it.message}")
-            val data = withContext(Dispatchers.IO) { it.body?.string().orEmpty() }
-            return parse(data)
-        }
-    }
+class WebFallbackRepository(private val client: OkHttpClient = mirrorIptvClient) {
+    suspend fun fetchChannelGroupList(): ChannelGroupList =
+        client.readIptvFile(Constants.WEB_FALLBACK_LIST_URL, ::parse)
 
     companion object {
         private val channelBlockRegex =
@@ -56,7 +45,7 @@ class WebFallbackRepository {
                 .distinctBy { it.name }
                 .toList()
 
-            if (channels.isEmpty()) throw Exception("全国直播列表为空或格式不正确")
+            if (channels.isEmpty()) throw IOException("全国直播列表为空或格式不正确")
 
             return ChannelGroupList(
                 listOf(
