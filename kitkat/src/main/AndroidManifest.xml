@@ -2,7 +2,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
     <uses-feature android:name="android.software.leanback" android:required="false" />
-    <application android:label="我的电视 4.4" android:usesCleartextTraffic="true"
+    <application android:label="TVlite" android:usesCleartextTraffic="true"
         android:icon="@mipmap/ic_launcher" android:banner="@drawable/tv_banner"
         android:theme="@android:style/Theme.Holo.NoActionBar.Fullscreen">
         <activity android:name=".TvActivity" android:exported="true" android:screenOrientation="landscape">

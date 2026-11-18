@@ -14,7 +14,7 @@
 
 本分支基于 1.4.4。Android 4.4（API 19）电视使用 `:kitkat` 模块，在 Windows 运行
 `gradlew.bat :kitkat:assembleDebug`，安装生成的 `kitkat/build/outputs/apk/debug/kitkat-debug.apk`。
-应用名为「我的电视 4.4」。冷启动默认打开「全国直播」，从远端更新网页频道表，下载失败时读取上次有效列表。
+应用名为「TVlite」。冷启动默认打开「全国直播」，从远端更新网页频道表，下载失败时读取上次有效列表。
 按菜单键切换到 IPTV 订阅，按 OK 选台，上下换台、左右换线路。手动选源仅对本次运行生效。
 具体直播网页是否支持播放取决于盒子的系统 WebView。以下为原版 `:app` 的使用说明。
 
