@@ -1,11 +1,8 @@
 package top.yogiczy.mytv.data.entities
 
-import androidx.compose.runtime.Immutable
-
 /**
  * 直播源分组列表
  */
-@Immutable
 data class IptvGroupList(
     val value: List<IptvGroup> = emptyList(),
 ) : List<IptvGroup> by value {

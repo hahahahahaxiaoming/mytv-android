@@ -21,4 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "My TV"
 include(":app")
- 
+include(":kitkat")

@@ -15,6 +15,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
+    sourceSets["main"].java.srcDir("../shared/src/main/java")
     namespace = "top.yogiczy.mytv"
     compileSdk = 34
 

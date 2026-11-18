@@ -7,7 +7,6 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.BaseDataSource
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
-import top.yogiczy.mytv.ui.utils.SP
 import java.io.IOException
 import java.net.DatagramPacket
 import java.net.InetAddress
@@ -15,9 +14,9 @@ import java.net.InetSocketAddress
 import java.net.MulticastSocket
 
 @OptIn(UnstableApi::class)
-class RtpDataSource : BaseDataSource(true) {
-    class Factory : DataSource.Factory {
-        override fun createDataSource(): DataSource = RtpDataSource()
+class RtpDataSource(private val timeoutMs: Int) : BaseDataSource(true) {
+    class Factory(private val timeoutMs: Int) : DataSource.Factory {
+        override fun createDataSource(): DataSource = RtpDataSource(timeoutMs)
     }
 
     private val datagramBuffer = ByteArray(64 * 1024)
@@ -38,7 +37,7 @@ class RtpDataSource : BaseDataSource(true) {
         groupAddress = group
         socket = MulticastSocket(null).apply {
             reuseAddress = true
-            soTimeout = SP.videoPlayerLoadTimeout.toInt()
+            soTimeout = timeoutMs
             bind(InetSocketAddress(port))
             if (group.isMulticastAddress) joinGroup(group)
         }

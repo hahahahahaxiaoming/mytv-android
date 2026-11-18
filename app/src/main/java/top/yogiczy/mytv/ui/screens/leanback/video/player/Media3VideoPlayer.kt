@@ -56,7 +56,7 @@ class LeanbackMedia3VideoPlayer(
             })
 
         if (uri.toString().startsWith("rtp://", ignoreCase = true)) {
-            val mediaSource = ProgressiveMediaSource.Factory(RtpDataSource.Factory())
+            val mediaSource = ProgressiveMediaSource.Factory(RtpDataSource.Factory(SP.videoPlayerLoadTimeout.toInt()))
                 .createMediaSource(MediaItem.fromUri(uri))
             videoPlayer.setMediaSource(mediaSource)
             videoPlayer.prepare()

@@ -1,11 +1,8 @@
 package top.yogiczy.mytv.data.entities
 
-import androidx.compose.runtime.Immutable
-
 /**
  * 直播源
  */
-@Immutable
 data class Iptv(
     /**
      * 直播源名称
